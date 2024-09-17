@@ -1,6 +1,6 @@
 dataset:
-  root_dir: /your/path/VOCdevkit/VOC2012
-  name_list_dir: /your/path/WeCLIP/datasets/voc
+  root_dir: /content/VOCdevkit/VOC2012
+  name_list_dir: /content/WeCLIP/datasets/voc
   num_classes: 21
   crop_size: 320
   resize_range: [512, 2048]
