@@ -22,6 +22,7 @@ from utils.camutils import cams_to_affinity_label
 from utils.optimizer import PolyWarmupAdamW
 from WeCLIP_model.model_attn_aff_voc import WeCLIP
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config",
@@ -36,7 +37,8 @@ parser.add_argument("--crop_size", default=320, type=int, help="crop_size")
 
 def setup_seed(seed):
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
@@ -78,8 +80,8 @@ def validate(model=None, data_loader=None, cfg=None):
                         total=len(data_loader), ncols=100, ascii=" >="):
         name, inputs, labels, cls_label = data
 
-        inputs = inputs.cuda()
-        labels = labels.cuda()
+        inputs = inputs.to(DEVICE)
+        labels = labels.to(DEVICE)
 
         segs, cam, attn_loss = model(inputs, name, 'val')
 
@@ -190,7 +192,7 @@ def train(cfg):
     )
     logging.info('\nNetwork config: \n%s'%(WeCLIP_model))
     param_groups = WeCLIP_model.get_param_groups()
-    WeCLIP_model.cuda()
+    WeCLIP_model.to(DEVICE)
 
 
     mask_size = int(cfg.dataset.crop_size // 16)
@@ -243,7 +245,7 @@ def train(cfg):
             train_loader_iter = iter(train_loader)
             img_name, inputs, cls_labels, img_box = next(train_loader_iter)
 
-        segs, cam, attn_pred = WeCLIP_model(inputs.cuda(), img_name)
+        segs, cam, attn_pred = WeCLIP_model(inputs.to(DEVICE), img_name)
 
         pseudo_label = cam
 
