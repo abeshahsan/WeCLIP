@@ -198,7 +198,7 @@ def train(cfg):
 
     # logging.info('\nNetwork config: \n%s'%(WeCLIP_model))
     param_groups = WeCLIP_model.get_param_groups()
-    
+    WeCLIP_model.to(DEVICE)
 
     optimizer = PolyWarmupAdamW(
         params=[
@@ -247,9 +247,6 @@ def train(cfg):
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         start_iter = checkpoint['iter']
         logging.info(f"Loaded checkpoint from {checkpoint_path}, starting from iteration {start_iter}")
-
-
-    WeCLIP_model.to(DEVICE)
 
     train_loader_iter = iter(train_loader)
 
