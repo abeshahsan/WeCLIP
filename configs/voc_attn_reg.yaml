@@ -9,10 +9,10 @@ dataset:
 
 work_dir:
   dir: work_dir_voc
-  ckpt_dir: checkpoints
-  pred_dir: predictions
-  segs_dir: segs
-  tb_logger_dir: tb_logger
+  ckpt_dir: /content/drive/MyDrive/WEclip-ckpt
+  pred_dir: /content/predictions
+  segs_dir: /content/segs
+  tb_logger_dir: /content/tb_logger
 
 train:
   split: train_aug
