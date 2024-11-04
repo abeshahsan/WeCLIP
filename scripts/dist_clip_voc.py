@@ -246,7 +246,7 @@ def train(cfg):
     avg_meter = AverageMeter()
 
 
-    for n_iter in range(cfg.train.max_iters):
+    for n_iter in range(start_iter, cfg.train.max_iters):
         
         try:
             img_name, inputs, cls_labels, img_box = next(train_loader_iter)
