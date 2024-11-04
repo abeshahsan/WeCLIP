@@ -238,7 +238,7 @@ def train(cfg):
     checkpoint_path = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_2000.pth")
     
     if os.path.exists(checkpoint_path):
-        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        checkpoint = torch.load(checkpoint_path)
         
         # filtered_state_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in WeCLIP_model.state_dict()}
         
