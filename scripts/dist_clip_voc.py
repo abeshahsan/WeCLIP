@@ -194,6 +194,15 @@ def train(cfg):
     param_groups = WeCLIP_model.get_param_groups()
     WeCLIP_model.to(DEVICE)
 
+    # Load checkpoint if exists
+    start_iter = 0
+    checkpoint_path = os.path.join(cfg.work_dir.ckpt_dir, "latest_checkpoint.pth")
+    if os.path.exists(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path)
+        WeCLIP_model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_iter = checkpoint['iter']
+        logging.info(f"Loaded checkpoint from {checkpoint_path}, starting from iteration {start_iter}")
 
     mask_size = int(cfg.dataset.crop_size // 16)
     attn_mask = get_mask_by_radius(h=mask_size, w=mask_size, radius=args.radius)
@@ -280,7 +289,12 @@ def train(cfg):
 
             
             ckpt_name = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_%d.pth"%(n_iter+1))
-            torch.save(WeCLIP_model.state_dict(), ckpt_name)
+            checkpoint = {
+                'model_state_dict': WeCLIP_model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'iter': n_iter+1
+            }
+            torch.save(checkpoint, ckpt_name)
 
             logging.info("Iter: %d; Elasped: %s; ETA: %s; LR: %.3e;, pseudo_seg_loss: %.4f, attn_loss: %.4f, pseudo_seg_mAcc: %.4f"%(n_iter+1, delta, eta, cur_lr, avg_meter.pop('seg_loss'), avg_meter.pop('attn_loss'), seg_mAcc))
 
