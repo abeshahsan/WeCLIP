@@ -190,9 +190,6 @@ def train(cfg):
         dataset_root_path=cfg.dataset.root_dir,
         device='cuda'
     )
-    logging.info('\nNetwork config: \n%s'%(WeCLIP_model))
-    param_groups = WeCLIP_model.get_param_groups()
-    WeCLIP_model.to(DEVICE)
 
     # Load checkpoint if exists
     start_iter = 0
@@ -207,6 +204,10 @@ def train(cfg):
     mask_size = int(cfg.dataset.crop_size // 16)
     attn_mask = get_mask_by_radius(h=mask_size, w=mask_size, radius=args.radius)
     writer = SummaryWriter(cfg.work_dir.tb_logger_dir)
+
+    # logging.info('\nNetwork config: \n%s'%(WeCLIP_model))
+    param_groups = WeCLIP_model.get_param_groups()
+    WeCLIP_model.to(DEVICE)
 
     optimizer = PolyWarmupAdamW(
         params=[
