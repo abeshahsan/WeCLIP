@@ -191,20 +191,6 @@ def train(cfg):
         device='cuda'
     )
 
-    # Load checkpoint if exists
-    start_iter = 0
-    checkpoint_path = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_2000.pth")
-    
-    if os.path.exists(checkpoint_path):
-        checkpoint = torch.load(checkpoint_path, map_location="cpu")
-        
-        # filtered_state_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in WeCLIP_model.state_dict()}
-        
-        WeCLIP_model.load_state_dict(checkpoint['model_state_dict'], strict=False)
-
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        start_iter = checkpoint['iter']
-        logging.info(f"Loaded checkpoint from {checkpoint_path}, starting from iteration {start_iter}")
 
     mask_size = int(cfg.dataset.crop_size // 16)
     attn_mask = get_mask_by_radius(h=mask_size, w=mask_size, radius=args.radius)
@@ -212,7 +198,7 @@ def train(cfg):
 
     # logging.info('\nNetwork config: \n%s'%(WeCLIP_model))
     param_groups = WeCLIP_model.get_param_groups()
-    WeCLIP_model.to(DEVICE)
+    
 
     optimizer = PolyWarmupAdamW(
         params=[
@@ -246,6 +232,24 @@ def train(cfg):
         power = cfg.scheduler.power
     )
     logging.info('\nOptimizer: \n%s' % optimizer)
+
+    # Load checkpoint if exists
+    start_iter = 0
+    checkpoint_path = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_2000.pth")
+    
+    if os.path.exists(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        
+        # filtered_state_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in WeCLIP_model.state_dict()}
+        
+        WeCLIP_model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_iter = checkpoint['iter']
+        logging.info(f"Loaded checkpoint from {checkpoint_path}, starting from iteration {start_iter}")
+
+
+    WeCLIP_model.to(DEVICE)
 
     train_loader_iter = iter(train_loader)
 
