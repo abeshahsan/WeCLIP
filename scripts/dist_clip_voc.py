@@ -278,6 +278,9 @@ def train(cfg):
 
             seg_mAcc = (preds==gts).sum()/preds.size
 
+            
+            ckpt_name = os.path.join("/content/drive/MyDrive/WEclip-ckpt, "WeCLIP_model_iter_%d.pth"%(n_iter+1))
+            torch.save(WeCLIP_model.state_dict(), ckpt_name)
 
             logging.info("Iter: %d; Elasped: %s; ETA: %s; LR: %.3e;, pseudo_seg_loss: %.4f, attn_loss: %.4f, pseudo_seg_mAcc: %.4f"%(n_iter+1, delta, eta, cur_lr, avg_meter.pop('seg_loss'), avg_meter.pop('attn_loss'), seg_mAcc))
 
