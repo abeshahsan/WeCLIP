@@ -211,7 +211,7 @@ def main(cfg):
     print("msc segs score:")
     print(msc_seg_score)
 
-    # crf_proc(config=cfg)
+    crf_proc(config=cfg)
 
     return True
 
