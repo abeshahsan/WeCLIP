@@ -191,7 +191,7 @@ def main(cfg):
                      dataset_root_path=cfg.dataset.root_dir,
                      device='cuda')
     
-    checkpoint = torch.load("/content/WeCLIP_model.pth", map_location="cpu")
+    checkpoint = torch.load(args.model_path, map_location="cpu")
     trained_state_dict = checkpoint['model_state_dict']
 
     WeCLIP_model.load_state_dict(state_dict=trained_state_dict, strict=False)
@@ -221,8 +221,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = OmegaConf.load(args.config)
 
-    print(cfg)
-    print(args)
+    # print(cfg)
+    # print(args)
 
     args.work_dir = os.path.join(args.work_dir, args.eval_set)
 
