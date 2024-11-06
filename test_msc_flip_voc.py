@@ -191,7 +191,8 @@ def main(cfg):
                      dataset_root_path=cfg.dataset.root_dir,
                      device='cuda')
     
-    trained_state_dict = torch.load(args.model_path, map_location="cpu")
+    checkpoint = torch.load("/content/WeCLIP_model.pth", map_location="cpu")
+    trained_state_dict = checkpoint['model_state_dict']
 
     WeCLIP_model.load_state_dict(state_dict=trained_state_dict, strict=False)
     WeCLIP_model.eval()
