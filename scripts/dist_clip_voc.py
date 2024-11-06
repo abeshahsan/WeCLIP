@@ -235,7 +235,7 @@ def train(cfg):
 
     # Load checkpoint if exists
     start_iter = 0
-    checkpoint_path = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_12000.pth")
+    checkpoint_path = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_13800.pth")
     
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
