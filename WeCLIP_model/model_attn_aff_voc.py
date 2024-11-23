@@ -173,5 +173,3 @@ class WeCLIP(nn.Module):
         all_cam_labels = torch.stack(cam_list, dim=0)
 
         return seg, all_cam_labels, attn_pred
-
-        
