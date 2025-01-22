@@ -14,6 +14,9 @@ from WeCLIP_model.PAR import PAR
 from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
 
+from transformers import CLIPTokenizer
+from transformers import AutoTokenizer
+
 
 
 def Normalize_clip():
@@ -30,15 +33,27 @@ def reshape_transform(tensor, height=28, width=28):
     result = result.transpose(2, 3).transpose(1, 2)
     return result
 
+def build_tokenizer():
+    
+    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+    os.environ['TOKENIZERS_PARALLELISM'] = 'true'
 
+    return tokenizer
+
+tokenizer = build_tokenizer()
 
 def zeroshot_classifier(classnames, templates, model):
     with torch.no_grad():
         zeroshot_weights = []
         for classname in classnames:
             texts = [template.format(classname) for template in templates] #format with class
-            texts = clip.tokenize(texts).cuda() #tokenize
-            class_embeddings = model.encode_text(texts) #embed with text encoder
+            # texts = clip.tokenize(texts).cuda() #tokenize
+            tokens = tokenizer(
+                texts, padding='max_length', truncation=True, max_length=77, return_tensors='pt'
+            )                
+            tokens = {key:val.cuda() for key,val in tokens.items()}
+
+            class_embeddings = model.encode_text(tokens) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
             class_embedding = class_embeddings.mean(dim=0)
             class_embedding /= class_embedding.norm()
