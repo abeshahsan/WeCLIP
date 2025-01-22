@@ -263,11 +263,13 @@ class SwinTransformerBlock(nn.Module):
             x = shifted_x
         x = x.view(B, H * W, C)
 
+        attention = x.copy()
+
         # FFN
         x = shortcut + self.drop_path(x)
         x = x + self.drop_path(self.mlp(self.norm2(x)))
 
-        return x
+        return x, attention
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
@@ -385,14 +387,27 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x):
+    def forward(self, x, require_all_fts=False):
+        x_all = []
+        attn_all = []
         for blk in self.blocks:
             if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
+                x, attn = checkpoint.checkpoint(blk, x)
+                if require_all_fts:
+                    x_all.append(x)
+                    attn_all.append(attn)
             else:
-                x = blk(x)
+                x, attn = blk(x)
+                if require_all_fts:
+                    x_all.append(x)
+                    attn_all.append(attn)
+
         if self.downsample is not None:
             x = self.downsample(x)
+
+        if require_all_fts:
+            return x_all, attn_all
+        
         return x
 
     def extra_repr(self) -> str:
@@ -557,18 +572,27 @@ class SwinTransformer(nn.Module):
     def no_weight_decay_keywords(self):
         return {'relative_position_bias_table'}
 
-    def forward_features(self, x):
+    def forward_features(self, x, require_all_fts=False):
+        x_all = []
+        attn_all = []
         x = self.patch_embed(x)
         if self.ape:
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
 
         for layer in self.layers:
-            x = layer(x)
+            x, attn = layer(x, require_all_fts)
+            if require_all_fts:
+                x_all += x
+                attn_all += attn
 
         x = self.norm(x)  # B L C
         x = self.avgpool(x.transpose(1, 2))  # B C 1
         x = torch.flatten(x, 1)
+
+        if require_all_fts:
+            return x_all, attn_all
+        
         return x
 
     def forward(self, x):

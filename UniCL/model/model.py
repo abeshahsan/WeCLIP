@@ -136,11 +136,13 @@ class UniCLModel(nn.Module):
         return imnet_text_embeddings
 
     def encode_image(self, image, norm=True):
-        x = self.image_encoder.forward_features(image)
-        x = x @ self.image_projection
+        x:list = self.image_encoder.forward_features(image, require_all_fts=True)
 
-        if norm:
-            x = x / x.norm(dim=-1, keepdim=True)
+        for i in range(len(x)):
+            x[i] = x[i] @ self.image_projection
+            if norm:
+                x = x / x.norm(dim=-1, keepdim=True)
+
 
         return x
 

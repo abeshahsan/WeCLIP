@@ -11,7 +11,8 @@ import os
 from torchvision.transforms import Compose, Normalize
 from .Decoder.TransDecoder import DecoderTransformer
 from WeCLIP_model.PAR import PAR
-
+from ..UniCL.model.model import build_unicl_model
+from ..UniCL.config import get_config
 
 
 
@@ -36,7 +37,7 @@ def zeroshot_classifier(classnames, templates, model):
         zeroshot_weights = []
         for classname in classnames:
             texts = [template.format(classname) for template in templates] #format with class
-            texts = clip.tokenize(texts).cuda() #tokenize
+            # texts = clip.tokenize(texts).cuda() #tokenize
             class_embeddings = model.encode_text(texts) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
             class_embedding = class_embeddings.mean(dim=0)
@@ -63,14 +64,24 @@ class WeCLIP(nn.Module):
         self.num_classes = num_classes
         self.embedding_dim = embedding_dim
 
-        self.encoder, _ = clip.load(clip_model, device=device)
+        # self.encoder, _ = clip.load(clip_model, device=device)
 
-        for name, param in self.encoder.named_parameters():
-            if "11" not in name:
-                param.requires_grad=False
+        """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
 
-        for name, param in self.encoder.named_parameters():
-            print(name, param.requires_grad)
+        unicl_config = get_config()
+        self.encoder = build_unicl_model(unicl_config)
+        self.encoder = self.encoder.to(device)
+        self.encoder.eval()
+
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+
+        # for name, param in self.encoder.named_parameters():
+        #     if "11" not in name:
+        #         param.requires_grad=False
+
+        # for name, param in self.encoder.named_parameters():
+        #     print(name, param.requires_grad)
 
         self.in_channels = in_channels
 
@@ -81,7 +92,13 @@ class WeCLIP(nn.Module):
         self.bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], self.encoder)
         self.fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], self.encoder)
 
-        self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
+        """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
+
+
+        # self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
+        self.target_layers = [self.encoder.image_encoder.layers[-1].norm]
+
+
         self.grad_cam = GradCAM(model=self.encoder, target_layers=self.target_layers, reshape_transform=reshape_transform)
         self.root_path = os.path.join(dataset_root_path, 'SegmentationClassAug')
         self.cam_bg_thres = 1
@@ -110,7 +127,8 @@ class WeCLIP(nn.Module):
         self.encoder.eval()
         self.iter_num += 1
 
-        fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
+        # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
+        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder)
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
@@ -173,3 +191,15 @@ class WeCLIP(nn.Module):
         all_cam_labels = torch.stack(cam_list, dim=0)
 
         return seg, all_cam_labels, attn_pred
+
+def generate_unicl_features(image, encoder):
+    model = encoder.cuda()
+
+    if len(image.shape) == 3:
+        image = image.unsqueeze(0)
+    h, w = image.shape[-2], image.shape[-1]
+    image = image.cuda()
+    
+    image_features_all, attn_weight_list = model.encode_image(image, h, w, require_all_fts=True)
+        
+    return image_features_all, attn_weight_list
