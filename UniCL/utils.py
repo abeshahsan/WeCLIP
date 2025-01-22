@@ -9,7 +9,6 @@
 import os
 import torch
 import torch.distributed as dist
-from timm.models.layers import trunc_normal_
 
 try:
     # noinspection PyUnresolvedReferences
@@ -18,35 +17,19 @@ except ImportError:
     amp = None
 
 
-def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
-    logger.info(f"==============> Resuming form {config.MODEL.RESUME}....................")
+def load_checkpoint(config, model):
     if config.MODEL.RESUME.startswith('https'):
         checkpoint = torch.hub.load_state_dict_from_url(
             config.MODEL.RESUME, map_location='cpu', check_hash=True)
     elif os.path.exists(config.MODEL.RESUME):
         checkpoint = torch.load(config.MODEL.RESUME, map_location='cpu')
     else:
-        logger.info(f"==============> Cannot find {config.MODEL.RESUME}....................")
         return None
     
-    msg = model.load_state_dict(checkpoint['model'], strict=False)
-    logger.info(msg)
-    max_accuracy = 0.0
-    if not config.EVAL_MODE and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-        config.defrost()
-        config.TRAIN.START_EPOCH = checkpoint['epoch'] + 1
-        config.freeze()
-        if 'amp' in checkpoint and config.AMP_OPT_LEVEL != "O0" and checkpoint['config'].AMP_OPT_LEVEL != "O0":
-            amp.load_state_dict(checkpoint['amp'])
-        logger.info(f"=> loaded successfully '{config.MODEL.RESUME}' (epoch {checkpoint['epoch']})")
-        if 'max_accuracy' in checkpoint:
-            max_accuracy = checkpoint['max_accuracy']
-
+    model.load_state_dict(checkpoint['model'], strict=False)
+    
     del checkpoint
     torch.cuda.empty_cache()
-    return max_accuracy
 
 
 def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler, logger):

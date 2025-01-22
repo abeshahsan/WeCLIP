@@ -33,6 +33,7 @@ parser.add_argument("--seg_detach", action="store_true", help="detach seg")
 parser.add_argument("--work_dir", default=None, type=str, help="work_dir")
 parser.add_argument("--radius", default=8, type=int, help="radius")
 parser.add_argument("--crop_size", default=320, type=int, help="crop_size")
+parser.add_argument("--unicl_pretrain_path", default=None, type=str, help="unicl_pretrain_path")
 
 
 def setup_seed(seed):
@@ -185,6 +186,7 @@ def train(cfg):
     WeCLIP_model = WeCLIP(
         num_classes=cfg.dataset.num_classes,
         clip_model=cfg.clip_init.clip_pretrain_path,
+        unicl_model=cfg.unicl_init.unicl_pretrain_path,
         embedding_dim=cfg.clip_init.embedding_dim,
         in_channels=cfg.clip_init.in_channels,
         dataset_root_path=cfg.dataset.root_dir,

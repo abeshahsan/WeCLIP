@@ -1,11 +1,8 @@
 from collections import OrderedDict
-from typing import Tuple, Union
 import logging
 import os
 
-import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import nn
 
 from timm.models.layers import DropPath, trunc_normal_

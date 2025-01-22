@@ -41,3 +41,6 @@ clip_init:
   clip_pretrain_path: /content/WeCLIP/pretrained/ViT-B-16.pt
   embedding_dim: 256
   in_channels: [768, 768,768,768]
+
+unicl_init:
+  unicl_pretrain_path: /content/WeCLIP/pretrained/unicl_swin_tiny.pth

@@ -59,7 +59,7 @@ def _refine_cams(ref_mod, images, cams, valid_key):
 
 
 class WeCLIP(nn.Module):
-    def __init__(self, num_classes=None, clip_model=None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
+    def __init__(self, num_classes=None, clip_model=None, unicl_model = None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
         super().__init__()
         self.num_classes = num_classes
         self.embedding_dim = embedding_dim
@@ -69,6 +69,7 @@ class WeCLIP(nn.Module):
         """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
 
         unicl_config = get_config()
+        unicl_config['MODEL']['PRETRAINED'] = unicl_model
         self.encoder = build_unicl_model(unicl_config)
         self.encoder = self.encoder.to(device)
         self.encoder.eval()

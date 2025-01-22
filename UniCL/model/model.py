@@ -1,21 +1,14 @@
-import pathlib
-import tempfile
-from collections import OrderedDict
-from typing import Tuple, Union
 import logging
 import os
 
-import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import nn
 
-from timm.models.layers import DropPath, trunc_normal_
+from timm.models.layers import trunc_normal_
 
 from .image_encoder import build_image_encoder
 from .text_encoder import build_text_encoder
 from .text_encoder import build_tokenizer
-from data.imagenet import IMAGENET_CLASSES, IMAGENET_DEFAULT_TEMPLATES
 
 logger = logging.getLogger(__name__)
 
@@ -117,24 +110,6 @@ class UniCLModel(nn.Module):
     def dtype(self):
         return self.logit_scale.dtype
 
-    def get_imnet_embeddings(self):
-        templates = IMAGENET_DEFAULT_TEMPLATES
-        clss_embeddings = []
-        for clss in IMAGENET_CLASSES:
-            txts = [template.format(clss) for template in templates]
-            
-            tokens = self.tokenizer(
-                txts, padding='max_length', truncation=True, max_length=77, return_tensors='pt'
-            )                
-            tokens = {key:val.cuda() for key,val in tokens.items()}
-
-            clss_embedding = self.encode_text(tokens)
-            clss_embedding = clss_embedding.mean(dim=0)
-            clss_embedding /= clss_embedding.norm()
-            clss_embeddings.append(clss_embedding)
-        imnet_text_embeddings = torch.stack(clss_embeddings, dim=0)
-        return imnet_text_embeddings
-
     def encode_image(self, image, norm=True):
         x:list = self.image_encoder.forward_features(image, require_all_fts=True)
 
@@ -176,13 +151,7 @@ def build_unicl_model(config, **kwargs):
     model = UniCLModel(config)
     if config['MODEL']['PRETRAINED'] != '':
         pretrained_path = config['MODEL']['PRETRAINED']
-        from ..Utils.Utils import is_valid_url, download_file
-        if is_valid_url(pretrained_path):
-            with tempfile.TemporaryDirectory() as tmp_path:
-                file_local_path = pathlib.Path(tmp_path) / 'base_model.pt'
-                download_file(pretrained_path, file_local_path)
-                model.from_pretrained(str(file_local_path), config['MODEL']['PRETRAINED_LAYERS'], config['VERBOSE'])
-        else:
-            model.from_pretrained(pretrained_path, config['MODEL']['PRETRAINED_LAYERS'], config['VERBOSE'])
+ 
+        model.from_pretrained(pretrained_path, config['MODEL']['PRETRAINED_LAYERS'], config['VERBOSE'])
 
     return model
