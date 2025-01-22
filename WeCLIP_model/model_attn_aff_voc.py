@@ -143,6 +143,10 @@ class WeCLIP(nn.Module):
         self.encoder.eval()
         self.iter_num += 1
 
+        #resize image to 224x224
+
+        # img = F.interpolate(img, size=(224, 224), mode='bilinear', align_corners=False)
+
         # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
         fts_all, attn_weight_list = generate_unicl_features(img, self.encoder)
 
