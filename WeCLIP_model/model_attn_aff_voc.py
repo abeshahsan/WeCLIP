@@ -216,6 +216,6 @@ def generate_unicl_features(image, encoder):
     h, w = image.shape[-2], image.shape[-1]
     image = image.cuda()
     
-    image_features_all, attn_weight_list = model.encode_image(image, h, w, require_all_fts=True)
+    image_features_all, attn_weight_list = model.encode_image(image, h, w)
         
     return image_features_all, attn_weight_list
