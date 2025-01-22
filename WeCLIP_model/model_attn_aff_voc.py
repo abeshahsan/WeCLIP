@@ -11,8 +11,8 @@ import os
 from torchvision.transforms import Compose, Normalize
 from .Decoder.TransDecoder import DecoderTransformer
 from WeCLIP_model.PAR import PAR
-from ..UniCL.model.model import build_unicl_model
-from ..UniCL.config import get_config
+from UniCL.model.model import build_unicl_model
+from UniCL.config import get_config
 
 
 
