@@ -32,7 +32,7 @@ parser.add_argument("--config",
 parser.add_argument("--seg_detach", action="store_true", help="detach seg")
 parser.add_argument("--work_dir", default=None, type=str, help="work_dir")
 parser.add_argument("--radius", default=8, type=int, help="radius")
-parser.add_argument("--crop_size", default=320, type=int, help="crop_size")
+parser.add_argument("--crop_size", default=224, type=int, help="crop_size")
 parser.add_argument("--unicl_pretrain_path", default=None, type=str, help="unicl_pretrain_path")
 
 
