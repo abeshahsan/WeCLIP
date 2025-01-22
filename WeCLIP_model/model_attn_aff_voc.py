@@ -97,7 +97,7 @@ class WeCLIP(nn.Module):
 
 
         # self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
-        self.target_layers = [self.encoder.image_encoder.layers[-1].norm]
+        self.target_layers = [self.encoder.image_encoder.layers[-1]]
 
 
         self.grad_cam = GradCAM(model=self.encoder, target_layers=self.target_layers, reshape_transform=reshape_transform)
