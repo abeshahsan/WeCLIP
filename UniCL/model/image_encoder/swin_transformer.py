@@ -581,7 +581,10 @@ class SwinTransformer(nn.Module):
         x = self.pos_drop(x)
 
         for layer in self.layers:
-            x, attn = layer(x, require_all_fts)
+            if isinstance(x, list):
+                x, attn = layer(x[-1], require_all_fts)
+            else:
+                x, attn = layer(x, require_all_fts)
             if require_all_fts:
                 x_all += x
                 attn_all += attn
