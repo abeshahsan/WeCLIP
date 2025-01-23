@@ -16,7 +16,7 @@ from UniCL.config import get_config
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
-from toruchsummary import summary 
+from torchsummary import summary 
 
 
 def Normalize_clip():
