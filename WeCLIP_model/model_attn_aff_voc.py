@@ -16,7 +16,7 @@ from UniCL.config import get_config
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
-
+from toruchsummary import summary 
 
 
 def Normalize_clip():
@@ -88,6 +88,8 @@ class WeCLIP(nn.Module):
         self.encoder = build_unicl_model(unicl_config)
         self.encoder = self.encoder.to(device)
         self.encoder.eval()
+        
+        summary(self.encoder, (3, 224, 224))
 
         for param in self.encoder.parameters():
             param.requires_grad = False
