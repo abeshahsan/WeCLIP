@@ -401,9 +401,10 @@ class BasicLayer(nn.Module):
                 if require_all_fts:
                     x_all.append(x)
                     attn_all.append(attn)
-
-        # if self.downsample is not None:
-        #     x = self.downsample(x)
+                    
+        for i in range(len(x_all)):
+            if self.downsample is not None:
+                 x_all[i] = self.downsample(x_all[i])
 
         if require_all_fts:
             return x_all, attn_all
