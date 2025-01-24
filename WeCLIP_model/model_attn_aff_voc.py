@@ -97,7 +97,7 @@ class WeCLIP(nn.Module):
         for name, param in self.encoder.named_parameters():
             if "image_encoder.layers.3.blocks.1" not in name:
                 param.requires_grad = False
-            print(f"{name}: requires_grad = {param.requires_grad}")
+            # print(f"{name}: requires_grad = {param.requires_grad}")
 
         # for name, param in self.encoder.named_parameters():
         #     if "11" not in name:
