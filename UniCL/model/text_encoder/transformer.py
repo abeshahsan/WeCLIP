@@ -122,10 +122,10 @@ class Transformer(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, (nn.Linear, nn.Conv2d)):
-            logger.info('=> init weight of Linear/Conv2d from trunc norm')
+            # logger.info('=> init weight of Linear/Conv2d from trunc norm')
             trunc_normal_(m.weight, std=0.02)
             if m.bias is not None:
-                logger.info('=> init bias of Linear/Conv2d to zeros')
+                # logger.info('=> init bias of Linear/Conv2d to zeros')
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, (nn.LayerNorm, nn.BatchNorm2d)):
             nn.init.constant_(m.bias, 0)

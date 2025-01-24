@@ -63,7 +63,7 @@ class UniCLModel(nn.Module):
         return model_dict_updated
 
     def from_pretrained(self, pretrained='', pretrained_layers=[], verbose=False):
-        print("Pretrained: ", pretrained)
+        # print("Pretrained: ", pretrained)
         if not os.path.isfile(pretrained):
             logger.warning(f'=> Pretrained model ({pretrained}) is not a file, skip init weight')
             return
@@ -93,7 +93,7 @@ class UniCLModel(nn.Module):
                         logger.info(f'=> init {k} from {pretrained}')
 
                     need_init_state_dict[k] = v
-        self.image_encoder.load_state_dict(image_encoder_state_dict, ['*'], verbose)
+        self.image_encoder.load_state_dict(image_encoder_state_dict, strict=False)
         self.load_state_dict(need_init_state_dict, strict=False)
 
     @torch.jit.ignore
