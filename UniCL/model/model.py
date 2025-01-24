@@ -111,7 +111,7 @@ class UniCLModel(nn.Module):
         return self.logit_scale.dtype
 
     def encode_image(self, image, norm=True):
-        x:list = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
+        x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
 
         for i in range(len(x)):
             x[i] = x[i] @ self.image_projection
