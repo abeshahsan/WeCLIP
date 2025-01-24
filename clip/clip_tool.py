@@ -26,8 +26,6 @@ class ClipOutputTarget:
         return model_output[:, self.category]
 
 
-
-
 def generate_clip_fts(image, model, require_all_fts=True):
     model = model.cuda()
 
@@ -197,8 +195,6 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         return cam_refined_list, keys, ori_width, ori_height
 
 
-
-
 def generate_cam_label(cam_refined_list, keys, w, h):
     refined_cam_to_save = []
     refined_cam_all_scales = []
@@ -214,8 +210,6 @@ def generate_cam_label(cam_refined_list, keys, w, h):
     refined_cam_all_scales = refined_cam_all_scales[0]
     
     return {'keys': keys.numpy(), 'refined_cam':refined_cam_all_scales}
-
-
 
 
 def perform_single_coco_cam(img_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,

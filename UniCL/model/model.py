@@ -1,3 +1,4 @@
+from genericpath import isfile
 import logging
 import os
 
@@ -62,9 +63,11 @@ class UniCLModel(nn.Module):
         return model_dict_updated
 
     def from_pretrained(self, pretrained='', pretrained_layers=[], verbose=True):
+        
         if not os.path.isfile(pretrained):
             logger.warning(f'=> Pretrained model ({pretrained}) is not a file, skip init weight')
             return
+            
 
         pretrained_dict = torch.load(pretrained, map_location='cpu')
         logger.info(f'=> Loading pretrained model {pretrained}')
@@ -90,7 +93,7 @@ class UniCLModel(nn.Module):
                         logger.info(f'=> init {k} from {pretrained}')
 
                     need_init_state_dict[k] = v
-        self.image_encoder.from_state_dict(image_encoder_state_dict, ['*'], verbose)
+        self.image_encoder.load_state_dict(image_encoder_state_dict, strict=False)
         self.load_state_dict(need_init_state_dict, strict=False)
 
     @torch.jit.ignore
@@ -152,6 +155,6 @@ def build_unicl_model(config, **kwargs):
     if config['MODEL']['PRETRAINED'] != '':
         pretrained_path = config['MODEL']['PRETRAINED']
  
-        model.from_pretrained(pretrained= pretrained_path,  verbose = config['VERBOSE'])
+        model.from_pretrained(pretrained= pretrained_path,  verbose = False)
 
     return model

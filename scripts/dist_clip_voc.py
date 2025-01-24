@@ -233,7 +233,7 @@ def train(cfg):
         warmup_ratio = cfg.scheduler.warmup_ratio,
         power = cfg.scheduler.power
     )
-    logging.info('\nOptimizer: \n%s' % optimizer)
+    # logging.info('\nOptimizer: \n%s' % optimizer)
 
     # Load checkpoint if exists
     start_iter = 0
