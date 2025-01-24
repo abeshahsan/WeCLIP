@@ -597,6 +597,9 @@ class SwinTransformer(nn.Module):
                     x_all += x
                     attn_all += attn
 
+            if isinstance(x, list):
+                x = x[-1]
+
             x = self.norm(x)  # B L C
             x = self.avgpool(x.transpose(1, 2))  # B C 1
             x = torch.flatten(x, 1)
