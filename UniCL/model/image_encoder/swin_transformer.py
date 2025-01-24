@@ -576,23 +576,24 @@ class SwinTransformer(nn.Module):
     def forward_features(self, x, require_all_fts=False):
         x_all = []
         attn_all = []
-        x = self.patch_embed(x)
-        if self.ape:
-            x = x + self.absolute_pos_embed
-        x = self.pos_drop(x)
+        with torch.no_grad():
+            x = self.patch_embed(x)
+            if self.ape:
+                x = x + self.absolute_pos_embed
+            x = self.pos_drop(x)
 
-        for layer in self.layers:
-            if isinstance(x, list):
-                x, attn = layer(x[-1], require_all_fts)
-            else:
-                x, attn = layer(x, require_all_fts)
-            if require_all_fts:
-                x_all += x
-                attn_all += attn
+            for layer in self.layers:
+                if isinstance(x, list):
+                    x, attn = layer(x[-1], require_all_fts)
+                else:
+                    x, attn = layer(x, require_all_fts)
+                if require_all_fts:
+                    x_all += x
+                    attn_all += attn
 
-        x = self.norm(x)  # B L C
-        x = self.avgpool(x.transpose(1, 2))  # B C 1
-        x = torch.flatten(x, 1)
+            x = self.norm(x)  # B L C
+            x = self.avgpool(x.transpose(1, 2))  # B C 1
+            x = torch.flatten(x, 1)
 
         if require_all_fts:
             return x_all, attn_all
@@ -600,8 +601,9 @@ class SwinTransformer(nn.Module):
         return x
 
     def forward(self, x):
-        x = self.forward_features(x)
-        x = self.head(x)
+        with torch.no_grad():
+            x = self.forward_features(x)
+            x = self.head(x)
         return x
 
     def flops(self):
