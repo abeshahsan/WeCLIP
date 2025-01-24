@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+import numpy as np
 
 
 class Mlp(nn.Module):
@@ -557,6 +558,8 @@ class SwinTransformer(nn.Module):
         self.dim_out = self.num_features
         
         self.apply(self._init_weights)
+        #newly added
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -616,3 +619,29 @@ class SwinTransformer(nn.Module):
         flops += self.num_features * self.patches_resolution[0] * self.patches_resolution[1] // (2 ** self.num_layers)
         flops += self.num_features * self.num_classes
         return flops
+
+
+    def forward_last_layer(self, image_features, text_features):
+        x, attn_weight = self.image_encoder.layers[-1].blocks[-1](image_features)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+
+        # # x = self.visual.ln_post(x)
+        x = self.norm(x)
+        x = torch.mean(x[:, 1:, :], dim=1)
+
+        # # if self.visual.proj is not None:
+        # #     x = x @ self.visual.proj
+
+        image_features = x
+
+        # normalized features
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
+        # cosine similarity as logits
+        logit_scale = self.logit_scale.exp()
+        logits_per_image = logit_scale * image_features @ text_features.t()
+
+        # shape = [global_batch_size, global_batch_size]
+        logits_per_image = logits_per_image.softmax(dim=-1)
+
+        return logits_per_image, attn_weight
