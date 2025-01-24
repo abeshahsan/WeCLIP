@@ -573,7 +573,7 @@ class SwinTransformer(nn.Module):
     def no_weight_decay_keywords(self):
         return {'relative_position_bias_table'}
 
-    def forward_features(self, x, require_all_fts=False):
+    def forward_features(self, x, H, W, require_all_fts=False):
         x_all = []
         attn_all = []
         with torch.no_grad():
