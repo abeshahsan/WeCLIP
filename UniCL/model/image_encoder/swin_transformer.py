@@ -390,10 +390,11 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x, require_all_fts=False):
+    def forward(self, x, require_all_fts=False, isLastLayer=False):
         x_all = []
         attn_all = []
-        for blk in self.blocks:
+        
+        for blk in self.blocks[:len(self.blocks) - 1 if isLastLayer else len(self.blocks)]:
             if self.use_checkpoint:
                 x, attn = checkpoint.checkpoint(blk, x)
                 if require_all_fts:
@@ -587,11 +588,11 @@ class SwinTransformer(nn.Module):
                 x = x + self.absolute_pos_embed
             x = self.pos_drop(x)
 
-            for layer in self.layers:
+            for idx, layer in enumerate(self.layers):
                 if isinstance(x, list):
-                    x, attn = layer(x[-1], require_all_fts)
+                    x, attn = layer(x[-1], require_all_fts, idx == len(self.layers) - 1)
                 else:
-                    x, attn = layer(x, require_all_fts)
+                    x, attn = layer(x, require_all_fts, idx == len(self.layers) - 1)
                 if require_all_fts:
                     x_all += x
                     attn_all += attn
