@@ -157,6 +157,8 @@ class WeCLIP(nn.Module):
         # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
         fts_all, attn_weight_list = generate_unicl_features(img, self.encoder)
 
+        print("lol")
+
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
         if self.require_all_fts==True:
