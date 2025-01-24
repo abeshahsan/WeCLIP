@@ -260,7 +260,7 @@ def train(cfg):
         warmup_ratio = cfg.scheduler.warmup_ratio,
         power = cfg.scheduler.power
     )
-    logging.info('\nOptimizer: \n%s' % optimizer)
+    # logging.info('\nOptimizer: \n%s' % optimizer)
     # wetr = DistributedDataParallel(wetr, device_ids=[args.local_rank], find_unused_parameters=True)
     # train_sampler.set_epoch(np.random.randint(cfg.train.max_iters))
     train_loader_iter = iter(train_loader)
