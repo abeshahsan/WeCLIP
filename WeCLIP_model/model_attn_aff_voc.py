@@ -160,6 +160,9 @@ class WeCLIP(nn.Module):
 
         for x in fts_all:
             print(x.shape)
+        print()
+        for attn in attn_weight_list:
+            print(attn.shape)
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
