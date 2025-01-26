@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import numpy as np
+import torch.nn.functional as F
 
 
 class Mlp(nn.Module):
@@ -611,9 +612,9 @@ class SwinTransformer(nn.Module):
 
                 for i in range(len(x_all)):
                     if x_all[i].shape[-1] < 768:
-                      # pad on the last dimension
-                        x_all[i] = torch.cat((x_all[i], torch.zeros(x_all[i].shape[0], x_all[i].shape[1], 768 - x_all[i].shape[-1]).cuda()), dim=-1)
-                    x_all[i] = self.proj_1(x_all[i])
+                        padding = (0, 512, 0, 768)
+                        x_all[i] = F.pad(x_all[i], padding)
+                        x_all[i] = x_all[i][:, :512, :768]
 
 
                     # elif x_all[i].shape[-1] == 384:
