@@ -611,21 +611,32 @@ class SwinTransformer(nn.Module):
                 #     print(attn.shape)
 
                 for i in range(len(x_all)):
-                    # if x_all[i].shape[-1] < 768:
-                    pad1 = 512 - x_all[i].shape[-2]
-                    pad2 = 768 - x_all[i].shape[-1]
-                    padding = (0, pad1, 0, pad2)
+                    # Calculate padding dimensions (ensure non-negative values)
+                    pad1 = max(0, 512 - x_all[i].shape[-2])
+                    pad2 = max(0, 768 - x_all[i].shape[-1])
+                    padding = (0, pad2, 0, pad1)  # Padding order: (left, right, top, bottom)
+
+                    # Apply padding to x_all[i]
                     x_all[i] = F.pad(x_all[i], padding)
+
+                    # Ensure slicing does not exceed dimensions
                     x_all[i] = x_all[i][:, :512, :768]
 
-                    # same for attention
+                    # Handle attention tensor
                     if attn_all[i].shape[-2] >= 3136:
                         attn_all[i] = attn_all[i].reshape(attn_all[i].shape[0], -1, 384)
-                    pad1 = 784 - attn_all[i].shape[-2]
-                    pad2 = 384 - attn_all[i].shape[-1]
-                    padding = (0, pad1, 0, pad2)
+
+                    # Calculate attention padding (ensure non-negative values)
+                    pad1 = max(0, 784 - attn_all[i].shape[-2])
+                    pad2 = max(0, 384 - attn_all[i].shape[-1])
+                    padding = (0, pad2, 0, pad1)
+
+                    # Apply padding to attn_all[i]
                     attn_all[i] = F.pad(attn_all[i], padding)
+
+                    # Ensure slicing does not exceed dimensions
                     attn_all[i] = attn_all[i][:, :784, :384]
+
 
 
                     # elif x_all[i].shape[-1] == 384:
