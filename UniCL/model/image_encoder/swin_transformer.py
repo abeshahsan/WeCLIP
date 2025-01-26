@@ -611,12 +611,12 @@ class SwinTransformer(nn.Module):
                 #     print(attn.shape)
 
                 for i in range(len(x_all)):
-                    if x_all[i].shape[-1] < 768:
-                        pad1 = 768 - x_all[i].shape[-1]
-                        pad2 = 768 - x_all[i].shape[-2]
-                        padding = (0, pad1, 0, pad2)
-                        x_all[i] = F.pad(x_all[i], padding)
-                        x_all[i] = x_all[i][:, :512, :768]
+                    # if x_all[i].shape[-1] < 768:
+                    pad1 = 768 - x_all[i].shape[-1]
+                    pad2 = 768 - x_all[i].shape[-2]
+                    padding = (0, pad1, 0, pad2)
+                    x_all[i] = F.pad(x_all[i], padding)
+                    x_all[i] = x_all[i][:, :512, :768]
 
 
                     # elif x_all[i].shape[-1] == 384:
