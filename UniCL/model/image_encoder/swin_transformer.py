@@ -561,6 +561,8 @@ class SwinTransformer(nn.Module):
         self.apply(self._init_weights)
         #newly added
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+        self.proj_1 = nn.Linear(192, 768)
+        self.proj_2 = nn.Linear(384, 768)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -599,15 +601,28 @@ class SwinTransformer(nn.Module):
 
             if isinstance(x, list):
                 x = x[-1]
+            
+            if require_all_fts:
+                for i in range(len(x_all)):
+                    if x_all[i].shape[-1] == 192:
+                      x_all[i] = self.proj_1(x_all[i])
+
+                    elif x_all[i].shape[-1] == 384:
+                      x_all[i] = self.proj_2(x_all[i])
+
+                    x_all[i] = self.norm(x_all[i])  # B L C
+                    x_all[i] = self.avgpool(x_all[i].transpose(1, 2))  # B C 1
+                    x_all[i] = torch.flatten(x_all[i], 1)
+                    # print(x_all[i].shape)
+
+                return x_all, attn_all
+
 
             x = self.norm(x)  # B L C
             x = self.avgpool(x.transpose(1, 2))  # B C 1
             x = torch.flatten(x, 1)
-
-        if require_all_fts:
-            return x_all, attn_all
-        
-        return x
+            
+            return x
 
     def forward(self, x):
         with torch.no_grad():
