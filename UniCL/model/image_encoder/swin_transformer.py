@@ -610,9 +610,9 @@ class SwinTransformer(nn.Module):
                     elif x_all[i].shape[-1] == 384:
                       x_all[i] = self.proj_2(x_all[i])
 
-                    x_all[i] = self.norm(x_all[i])  # B L C
-                    x_all[i] = self.avgpool(x_all[i].transpose(1, 2))  # B C 1
-                    x_all[i] = torch.flatten(x_all[i], 1)
+                    # x_all[i] = self.norm(x_all[i])  # B L C
+                    # x_all[i] = self.avgpool(x_all[i].transpose(1, 2))  # B C 1
+                    # x_all[i] = torch.flatten(x_all[i], 1)
                     # print(x_all[i].shape)
 
                 return x_all, attn_all
