@@ -11,6 +11,7 @@ import os
 from torchvision.transforms import Compose, Normalize
 from .Decoder.TransDecoder import DecoderTransformer
 from WeCLIP_model.PAR import PAR
+from UniCL.model.model import UniCLModel
 from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
 
@@ -221,8 +222,8 @@ class WeCLIP(nn.Module):
 
         return seg, all_cam_labels, attn_pred
 
-def generate_unicl_features(image, encoder):
-    model = encoder.cuda()
+def generate_unicl_features(image, encoder: UniCLModel):
+    model:UniCLModel = encoder.cuda()
 
     if len(image.shape) == 3:
         image = image.unsqueeze(0)
