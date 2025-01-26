@@ -561,8 +561,8 @@ class SwinTransformer(nn.Module):
         self.apply(self._init_weights)
         #newly added
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.proj_1 = nn.Linear(192, 768)
-        self.proj_2 = nn.Linear(384, 768)
+        self.proj_1 = nn.Linear(768, 768)
+        # self.proj_2 = nn.Linear(384, 768)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -603,18 +603,21 @@ class SwinTransformer(nn.Module):
                 x = x[-1]
             
             if require_all_fts:
-                for x in x_all:
-                    print(x.shape)
-                print()
-                for attn in attn_all:
-                    print(attn.shape)
+                # for x in x_all:
+                #     print(x.shape)
+                # print()
+                # for attn in attn_all:
+                #     print(attn.shape)
 
                 for i in range(len(x_all)):
-                    if x_all[i].shape[-1] == 192:
-                      x_all[i] = self.proj_1(x_all[i])
+                    if x_all[i].shape[-1] < 768:
+                      # pad on the last dimension
+                        x_all[i] = torch.cat((x_all[i], torch.zeros(x_all[i].shape[0], x_all[i].shape[1], 768 - x_all[i].shape[-1]).cuda()), dim=-1)
+                    x_all[i] = self.proj_1(x_all[i])
 
-                    elif x_all[i].shape[-1] == 384:
-                      x_all[i] = self.proj_2(x_all[i])
+
+                    # elif x_all[i].shape[-1] == 384:
+                    #   x_all[i] = self.proj_2(x_all[i])
 
                     # x_all[i] = self.norm(x_all[i])  # B L C
                     # x_all[i] = self.avgpool(x_all[i].transpose(1, 2))  # B C 1
