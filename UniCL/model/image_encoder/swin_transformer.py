@@ -603,6 +603,12 @@ class SwinTransformer(nn.Module):
                 x = x[-1]
             
             if require_all_fts:
+                for x in x_all:
+                    print(x.shape)
+                print()
+                for attn in attn_all:
+                    print(attn.shape)
+
                 for i in range(len(x_all)):
                     if x_all[i].shape[-1] == 192:
                       x_all[i] = self.proj_1(x_all[i])
