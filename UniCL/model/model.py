@@ -119,10 +119,10 @@ class UniCLModel(nn.Module):
         for i in range(len(x)):
             x[i] = x[i] @ self.image_projection
             if norm:
-                x = x / x.norm(dim=-1, keepdim=True)
+                x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
 
 
-        return x
+        return x, attn
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
