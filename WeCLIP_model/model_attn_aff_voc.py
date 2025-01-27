@@ -14,6 +14,7 @@ from WeCLIP_model.PAR import PAR
 from UniCL.model.model import UniCLModel
 from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
+from UniCL.model.model import interpolate_and_project
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
@@ -26,9 +27,8 @@ def Normalize_clip():
 
 
 def reshape_transform(tensor, height=28, width=28):
-    pad = height*width - tensor.shape[-2]
-    padding = (0, 0, 0, pad)
-    tensor = F.pad(tensor, padding)
+    
+    tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
 
     # tensor = tensor.permute(1, 0, 2)
     result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))

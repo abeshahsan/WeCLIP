@@ -150,8 +150,8 @@ class UniCLModel(nn.Module):
         self.original_last_attn_weight = attn[-1]
 
         for i, fts in enumerate(x):
-            projected_fts_all.append(self.interpolate_and_project(fts, (14, 14), 768))
-            projected_attn_weight_list.append(self.interpolate_and_project(attn[i], (14, 14), 196))
+            projected_fts_all.append(interpolate_and_project(fts, (14, 14), 768))
+            projected_attn_weight_list.append(interpolate_and_project(attn[i], (14, 14), 196))
         
         del x, attn
 
@@ -191,35 +191,9 @@ class UniCLModel(nn.Module):
         return features_image, features_text, T
     
 
-    
-    def interpolate_and_project(self, x, target_hw, target_channels):
-        """
-        Resizes and optionally projects the tensor to match the target size and channels.
-        x: Input tensor of shape (b, hw, c)
-        """
-        b, hw, c = x.shape
-        h = w = int(hw ** 0.5)  # Assuming square spatial dimensions
-        assert h * w == hw, "Input spatial dimensions must form a square"
-
-        # Reshape to (b, c, h, w)
-        x = x.permute(0, 2, 1).reshape(b, c, h, w)
-
-        # Resize to target spatial dimensions
-        x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
-
-        # Project channels if needed
-        if c != target_channels:
-            projection_layer = nn.Conv2d(c, target_channels, kernel_size=1).cuda()
-            x = projection_layer(x)
-
-        x = x.reshape(b, -1, target_channels)
-
-        return x
-    
-
-
 
     def forward_last_layer(self, image_features, text_features):
+        image_features = interpolate_and_project(image_features, (7, 7), self.target_channels)
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
         attn_weight = self.interpolate_and_project(attn_weight, self.target_hw, self.target_channels)
@@ -236,3 +210,26 @@ def build_unicl_model(config, **kwargs):
 
     return model
 
+def interpolate_and_project(x, target_hw, target_channels):
+    """
+    Resizes and optionally projects the tensor to match the target size and channels.
+    x: Input tensor of shape (b, hw, c)
+    """
+    b, hw, c = x.shape
+    h = w = int(hw ** 0.5)  # Assuming square spatial dimensions
+    assert h * w == hw, "Input spatial dimensions must form a square"
+
+    # Reshape to (b, c, h, w)
+    x = x.permute(0, 2, 1).reshape(b, c, h, w)
+
+    # Resize to target spatial dimensions
+    x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
+
+    # Project channels if needed
+    if c != target_channels:
+        projection_layer = nn.Conv2d(c, target_channels, kernel_size=1).cuda()
+        x = projection_layer(x)
+
+    x = x.reshape(b, -1, target_channels)
+
+    return x
