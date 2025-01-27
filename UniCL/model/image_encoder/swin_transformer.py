@@ -612,7 +612,7 @@ class SwinTransformer(nn.Module):
 
                 for i in range(len(x_all)):
                     # Calculate padding dimensions (ensure non-negative values)
-                    pad1 = max(0, 197 - x_all[i].shape[-2])
+                    pad1 = max(0, 196 - x_all[i].shape[-2])
                     pad2 = max(0, 768 - x_all[i].shape[-1])
                     padding = (0, pad2, 0, pad1)  # Padding order: (left, right, top, bottom)
 
@@ -620,7 +620,7 @@ class SwinTransformer(nn.Module):
                     x_all[i] = F.pad(x_all[i], padding)
 
                     # Ensure slicing does not exceed dimensions
-                    x_all[i] = x_all[i][:, :197, :768].permute(1, 0, 2)
+                    x_all[i] = x_all[i][:, :196, :768].permute(1, 0, 2)
 
                     # Handle attention tensor
                     if attn_all[i].shape[-2] >= 3136:

@@ -171,7 +171,9 @@ class WeCLIP(nn.Module):
         else:
             cam_fts_all = fts_all_stack.permute(2, 1, 0, 3)
 
-        all_img_tokens = fts_all_stack[:, 1:, ...]
+        # all_img_tokens = fts_all_stack[:, 1:, ...]
+        all_img_tokens = fts_all_stack
+
         img_tokens_channel = all_img_tokens.size(-1)
         all_img_tokens = all_img_tokens.permute(0, 2, 3, 1)
         all_img_tokens = all_img_tokens.reshape(-1, b, img_tokens_channel, h//16, w //16) #(11, b, c, h, w)
