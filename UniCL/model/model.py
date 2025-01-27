@@ -181,13 +181,15 @@ class UniCLModel(nn.Module):
             projected_fts_all.append(self.fts_projections[i](fts.view(b, -1)).view(196, b, 768))
             projected_attn_weight_list.append(self.attn_projections[i](attn[i].view(b, -1)).view(b, 196, 196))
 
-        for i in range(len(x)):
+        del x, attn
+
+        for i in range(len(projected_fts_all)):
             # x[i] = x[i] @ self.image_projection
             if norm:
-                x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
+                projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
+                
 
-
-        return x, attn
+        return projected_fts_all, projected_attn_weight_list
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
@@ -214,8 +216,6 @@ class UniCLModel(nn.Module):
 
         return features_image, features_text, T
     
-
-
     def forward_last_layer(self, image_features, text_features):
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
