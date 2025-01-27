@@ -212,6 +212,8 @@ class UniCLModel(nn.Module):
             projection_layer = nn.Conv2d(c, target_channels, kernel_size=1).cuda()
             x = projection_layer(x)
 
+        x = x.reshape(b, -1, target_channels)
+
         return x
     
 
