@@ -10,6 +10,7 @@ from timm.models.layers import trunc_normal_
 from .image_encoder import build_image_encoder
 from .text_encoder import build_text_encoder
 from .text_encoder import build_tokenizer
+import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
@@ -62,40 +63,11 @@ class UniCLModel(nn.Module):
             torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
             torch.Size([4, 49, 768]) torch.Size([4, 49, 768])
         """
+        
+        self.target_hw = (14, 14) 
+        self.target_channels = 768
+        
 
-        self.fts_projections = nn.ModuleList(
-            [
-                nn.Linear(784*192, 196 * 768),
-                nn.Linear(784*192, 196 * 768),
-                nn.Linear(196*384, 196 * 768),
-                nn.Linear(196*384, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-            ]
-        )
-
-        self.attn_projections = nn.ModuleList(
-            [
-                nn.Linear(3136*96, 196 * 196),
-                nn.Linear(3136*96, 196 * 196),
-                nn.Linear(784*192, 196 * 196),
-                nn.Linear(784*192, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(49*768, 196 * 196),
-                nn.Linear(49*768, 196 * 196),
-            ]
-        )
 
     def _convert_old_weights(self, model_dict):
         model_dict_updated = {}
@@ -178,16 +150,19 @@ class UniCLModel(nn.Module):
         self.original_last_attn_weight = attn[-1]
 
         for i, fts in enumerate(x):
-            projected_fts_all.append(self.fts_projections[i](fts.view(b, -1)).view(196, b, 768))
-            projected_attn_weight_list.append(self.attn_projections[i](attn[i].view(b, -1)).view(b, 196, 196))
+            projected_fts_all.append(self.interpolate_and_project(fts, self.target_hw, self.target_channels))
+            projected_attn_weight_list.append(self.interpolate_and_project(attn[i], self.target_hw, self.target_channels))
+        
+        del x, attn
 
-        for i in range(len(x)):
+        for i in range(len(projected_fts_all)):
             # x[i] = x[i] @ self.image_projection
             if norm:
-                x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
+                # x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
+                projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
 
 
-        return x, attn
+        return projected_fts_all, projected_attn_weight_list
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
@@ -215,11 +190,36 @@ class UniCLModel(nn.Module):
         return features_image, features_text, T
     
 
+    
+    def interpolate_and_project(self, x, target_hw, target_channels):
+        """
+        Resizes and optionally projects the tensor to match the target size and channels.
+        x: Input tensor of shape (b, hw, c)
+        """
+        b, hw, c = x.shape
+        h = w = int(hw ** 0.5)  # Assuming square spatial dimensions
+        assert h * w == hw, "Input spatial dimensions must form a square"
+
+        # Reshape to (b, c, h, w)
+        x = x.permute(0, 2, 1).reshape(b, c, h, w)
+
+        # Resize to target spatial dimensions
+        x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
+
+        # Project channels if needed
+        if c != target_channels:
+            projection_layer = nn.Conv2d(c, target_channels, kernel_size=1).cuda()
+            x = projection_layer(x)
+
+        return x
+    
+
+
 
     def forward_last_layer(self, image_features, text_features):
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
-        attn_weight = self.attn_projections[-1](attn_weight.view(attn_weight.size(0), -1)).view(attn_weight.size(0), 196, 196)
+        attn_weight = self.interpolate_and_project(attn_weight, self.target_hw, self.target_channels)
 
         return logits_per_image, attn_weight
 
