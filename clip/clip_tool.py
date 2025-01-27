@@ -150,7 +150,7 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         if idx == 0:
             if require_seg_trans == True:
                 attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
-                attn_weight = attn_weight[:, 1:, 1:][-6:] #-8
+                attn_weight = attn_weight[:, :, :][-6:] #-8
 
                 # attn_diff = torch.abs(seg_attn - attn_weight)
                 attn_diff = seg_attn - attn_weight
@@ -168,7 +168,7 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
                 attn_weight = attn_weight * seg_attn.squeeze(0).detach()
             else:
                 attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
-                attn_weight = attn_weight[:, 1:, 1:][-8:]
+                attn_weight = attn_weight[:, :, :][-8:]
                 attn_weight = torch.mean(attn_weight, dim=0)  # (1, hw, hw)
                 attn_weight = attn_weight.detach()
             _trans_mat = compute_trans_mat(attn_weight)
