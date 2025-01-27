@@ -163,6 +163,7 @@ class UniCLModel(nn.Module):
 
 
         return projected_fts_all, projected_attn_weight_list
+        return projected_fts_all, projected_attn_weight_list
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
