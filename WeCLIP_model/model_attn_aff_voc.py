@@ -26,7 +26,12 @@ def Normalize_clip():
 
 
 def reshape_transform(tensor, height=28, width=28):
-    tensor = tensor.permute(1, 0, 2)
+    pad = height*width - tensor.shape[-2]
+    padding = (0, 0, 0, pad)
+    tensor = F.pad(tensor, padding)
+    print(tensor.shape)
+
+    # tensor = tensor.permute(1, 0, 2)
     result = tensor[:, 1:, :].reshape(tensor.size(0), height, width, tensor.size(2))
 
     # Bring the channels to the first dimension,
