@@ -148,6 +148,33 @@ class UniCLModel(nn.Module):
         T = self.logit_scale.exp()
 
         return features_image, features_text, T
+    
+
+
+    def forward_last_layer(self, image_features, text_features):
+        x, attn_weight = self.image_encoder.layers[-1].blocks[-1](image_features)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+
+        # # x = self.visual.ln_post(x)
+        x = self.norm(x)
+        x = torch.mean(x[:, 1:, :], dim=1)
+
+        # # if self.visual.proj is not None:
+        # #     x = x @ self.visual.proj
+
+        image_features = x
+
+        # normalized features
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
+        # cosine similarity as logits
+        logit_scale = self.logit_scale.exp()
+        logits_per_image = logit_scale * image_features @ text_features.t()
+
+        # shape = [global_batch_size, global_batch_size]
+        logits_per_image = logits_per_image.softmax(dim=-1)
+
+        return logits_per_image, attn_weight
 
 
 def build_unicl_model(config, **kwargs):
@@ -158,3 +185,4 @@ def build_unicl_model(config, **kwargs):
         model.from_pretrained(pretrained= pretrained_path,  verbose = False)
 
     return model
+
