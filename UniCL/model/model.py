@@ -117,7 +117,7 @@ class UniCLModel(nn.Module):
         x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
 
         for i in range(len(x)):
-            x[i] = x[i] @ self.image_projection
+            # x[i] = x[i] @ self.image_projection
             if norm:
                 x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
 
