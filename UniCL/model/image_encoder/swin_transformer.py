@@ -562,8 +562,6 @@ class SwinTransformer(nn.Module):
         self.apply(self._init_weights)
         #newly added
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.proj_1 = nn.Linear(768, 768)
-        # self.proj_2 = nn.Linear(384, 768)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
