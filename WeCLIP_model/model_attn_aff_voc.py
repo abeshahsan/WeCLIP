@@ -29,7 +29,6 @@ def reshape_transform(tensor, height=28, width=28):
     pad = height*width - tensor.shape[-2]
     padding = (0, 0, 0, pad)
     tensor = F.pad(tensor, padding)
-    print(tensor.shape)
 
     # tensor = tensor.permute(1, 0, 2)
     result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
