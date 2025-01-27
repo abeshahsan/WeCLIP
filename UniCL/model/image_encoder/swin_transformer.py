@@ -678,7 +678,7 @@ class SwinTransformer(nn.Module):
         image_features = image_features.permute(1, 0, 2)  # 196 1 768 -> 1 196 768
         image_features = image_features[:, :49, :]  # 1 49 768
 
-        x, attn_weight = self.image_encoder.layers[-1].blocks[-1](image_features)
+        x, attn_weight = self.layers[-1].blocks[-1](image_features)
 
         x = x.permute(1, 0, 2)  # LND -> NLD
 
