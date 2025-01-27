@@ -32,7 +32,7 @@ def reshape_transform(tensor, height=28, width=28):
     print(tensor.shape)
 
     # tensor = tensor.permute(1, 0, 2)
-    result = tensor[:, 1:, :].reshape(tensor.size(0), height, width, tensor.size(2))
+    result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
 
     # Bring the channels to the first dimension,
     # like in CNNs.
