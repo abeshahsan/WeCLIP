@@ -150,8 +150,8 @@ class UniCLModel(nn.Module):
         self.original_last_attn_weight = attn[-1]
 
         for i, fts in enumerate(x):
-            projected_fts_all.append(self.interpolate_and_project(fts, self.target_hw, self.target_channels))
-            projected_attn_weight_list.append(self.interpolate_and_project(attn[i], self.target_hw, self.target_channels))
+            projected_fts_all.append(self.interpolate_and_project(fts, (14, 14), 768))
+            projected_attn_weight_list.append(self.interpolate_and_project(attn[i], (14, 14), 196))
         
         del x, attn
 
