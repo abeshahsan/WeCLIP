@@ -41,10 +41,61 @@ class UniCLModel(nn.Module):
             torch.empty(self.image_encoder.dim_out, dim_projection)
         )
 
+        self.original_last_fts = None
+        self.original_last_attn_weight = None
+
         self.logit_scale = nn.Parameter(torch.ones([]))
 
         trunc_normal_(self.text_projection, std=.02)
         trunc_normal_(self.image_projection, std=.02)
+
+        """
+            torch.Size([4, 784, 192]) torch.Size([4, 3136, 96])
+            torch.Size([4, 784, 192]) torch.Size([4, 3136, 96])
+            torch.Size([4, 196, 384]) torch.Size([4, 784, 192])
+            torch.Size([4, 196, 384]) torch.Size([4, 784, 192])
+            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
+            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
+            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
+            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
+            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
+            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
+            torch.Size([4, 49, 768]) torch.Size([4, 49, 768])
+        """
+
+        self.fts_projections = nn.ModuleList(
+            [
+                nn.Linear(784*192, 196 * 768),
+                nn.Linear(784*192, 196 * 768),
+                nn.Linear(196*384, 196 * 768),
+                nn.Linear(196*384, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+                nn.Linear(49*768, 196 * 768),
+            ]
+        )
+
+        self.attn_projections = nn.ModuleList(
+            [
+                nn.Linear(3136*96, 196 * 196),
+                nn.Linear(3136*96, 196 * 196),
+                nn.Linear(784*192, 196 * 196),
+                nn.Linear(784*192, 196 * 196),
+                nn.Linear(196*384, 196 * 196),
+                nn.Linear(196*384, 196 * 196),
+                nn.Linear(196*384, 196 * 196),
+                nn.Linear(196*384, 196 * 196),
+                nn.Linear(196*384, 196 * 196),
+                nn.Linear(196*384, 196 * 196),
+                nn.Linear(49*768, 196 * 196),
+                nn.Linear(49*768, 196 * 196),
+            ]
+        )
 
     def _convert_old_weights(self, model_dict):
         model_dict_updated = {}
@@ -112,9 +163,23 @@ class UniCLModel(nn.Module):
     @property
     def dtype(self):
         return self.logit_scale.dtype
-
+    
+    def get_original_last_fts(self):
+        return self.original_last_fts, self.original_last_attn_weight
+    
     def encode_image(self, image, norm=True):
+        b = image.shape[0]
         x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
+
+        projected_fts_all = []
+        projected_attn_weight_list = []
+
+        self.original_last_fts = x[-1]
+        self.original_last_attn_weight = attn[-1]
+
+        for i, fts in enumerate(x):
+            projected_fts_all.append(self.fts_projections[i](fts.view(b, -1)).view(196, b, 768))
+            projected_attn_weight_list.append(self.attn_projections[i](attn[i].view(b, -1)).view(b, 196, 196))
 
         for i in range(len(x)):
             # x[i] = x[i] @ self.image_projection
@@ -152,8 +217,9 @@ class UniCLModel(nn.Module):
 
 
     def forward_last_layer(self, image_features, text_features):
-
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
+
+        attn_weight = self.attn_projections[-1](attn_weight.view(attn_weight.size(0), -1)).view(attn_weight.size(0), 196, 196)
 
         return logits_per_image, attn_weight
 

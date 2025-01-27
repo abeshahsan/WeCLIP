@@ -94,51 +94,7 @@ class WeCLIP(nn.Module):
         self.encoder = self.encoder.to(device)
         self.encoder.eval()
 
-        """
-                torch.Size([4, 784, 192]) torch.Size([4, 3136, 96])
-                torch.Size([4, 784, 192]) torch.Size([4, 3136, 96])
-                torch.Size([4, 196, 384]) torch.Size([4, 784, 192])
-                torch.Size([4, 196, 384]) torch.Size([4, 784, 192])
-                torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-                torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-                torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-                torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-                torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-                torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-                torch.Size([4, 49, 768]) torch.Size([4, 49, 768])
-        """
-
-        self.fts_projections = nn.ModuleList(
-            [
-                nn.Linear(784*192, 196 * 768),
-                nn.Linear(784*192, 196 * 768),
-                nn.Linear(196*384, 196 * 768),
-                nn.Linear(196*384, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-                nn.Linear(49*768, 196 * 768),
-            ]
-        )
-
-        self.attn_projections = nn.ModuleList(
-            [
-                nn.Linear(3136*96, 196 * 196),
-                nn.Linear(3136*96, 196 * 196),
-                nn.Linear(784*192, 196 * 196),
-                nn.Linear(784*192, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(196*384, 196 * 196),
-                nn.Linear(49*768, 196 * 196),
-            ]
-        )
+       
         
         # summary(self.encoder.image_encoder, (3, 224, 224))
 
@@ -206,13 +162,7 @@ class WeCLIP(nn.Module):
         # img = F.interpolate(img, size=(224, 224), mode='bilinear', align_corners=False)
 
         # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
-        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder)
-        projected_fts_all = []
-        projected_attn_weight_list = []
-
-        for i, fts in enumerate(fts_all):
-            projected_fts_all.append(self.fts_projections[i](fts.view(b, -1)).view(196, b, 768))
-            projected_attn_weight_list.append(self.attn_projections[i](attn_weight_list[i].view(b, -1)).view(b, 196, 196))
+        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder, )
 
         # for x in fts_all:
         #     print(x.shape)
@@ -220,12 +170,12 @@ class WeCLIP(nn.Module):
         # for attn in attn_weight_list:
         #     print(attn.shape)
 
-        fts_all_stack = torch.stack(projected_fts_all, dim=0) # (11, hw, b, c)
-        attn_weight_stack = torch.stack(projected_attn_weight_list, dim=0).permute(1, 0, 2, 3)
+        fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
+        attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
         if self.require_all_fts==True:
-            cam_fts_all = fts_all_stack[-1].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
+            cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
         else:
-            cam_fts_all = fts_all_stack.permute(2, 1, 0, 3)
+            cam_fts_all = self.encoder.get_original_last_fts()[0].permute(2, 1, 0, 3)
 
         # all_img_tokens = fts_all_stack[:, 1:, ...]
         all_img_tokens = fts_all_stack
