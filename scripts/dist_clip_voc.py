@@ -166,6 +166,7 @@ def train(cfg):
         aug=False,
         ignore_index=cfg.dataset.ignore_index,
         num_classes=cfg.dataset.num_classes,
+        crop_size=cfg.dataset.crop_size,
     )
 
     train_loader = DataLoader(train_dataset,
