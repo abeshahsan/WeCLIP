@@ -633,7 +633,7 @@ class SwinTransformer(nn.Module):
 
         x, attn_weight = self.layers[-1].blocks[-1](image_features)
 
-        x = x.permute(1, 0, 2)  # LND -> NLD
+        # x = x.permute(1, 0, 2)  # LND -> NLD
 
         # # x = self.visual.ln_post(x)
         x = self.norm(x)
