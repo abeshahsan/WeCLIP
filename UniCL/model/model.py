@@ -146,8 +146,8 @@ class UniCLModel(nn.Module):
         projected_fts_all = []
         projected_attn_weight_list = []
 
-        self.original_last_fts = x[-1]
-        self.original_last_attn_weight = attn[-1]
+        self.original_last_fts = x[-1].clone()
+        self.original_last_attn_weight = attn[-1].clone()
 
         for i, fts in enumerate(x):
             projected_fts_all.append(interpolate_and_project(fts, (14, 14), 768))
