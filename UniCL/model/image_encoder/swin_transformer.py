@@ -637,7 +637,7 @@ class SwinTransformer(nn.Module):
 
         # # x = self.visual.ln_post(x)
         x = self.norm(x)
-        x = torch.mean(x[:, 1:, :], dim=1)
+        x = torch.mean(x[:, :, :], dim=1)
 
         # # if self.visual.proj is not None:
         # #     x = x @ self.visual.proj
