@@ -163,7 +163,7 @@ def train(cfg):
         name_list_dir=cfg.dataset.name_list_dir,
         split=cfg.val.split,
         stage='train',
-        aug=False,
+        aug=True,
         ignore_index=cfg.dataset.ignore_index,
         num_classes=cfg.dataset.num_classes,
         crop_size=cfg.dataset.crop_size,
