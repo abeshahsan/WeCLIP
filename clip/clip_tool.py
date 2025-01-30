@@ -189,10 +189,10 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         cam_refined = torch.matmul(trans_mat, cam_to_refine).reshape(h // 16, w // 16)
         cam_refined_list.append(cam_refined)
 
-    if mode == 'train':
-        return cam_refined_list, keys, w, h
-    else:
-        return cam_refined_list, keys, ori_width, ori_height
+    # if mode == 'train':
+    return cam_refined_list, keys, w, h
+    # else:
+        # return cam_refined_list, keys, ori_width, ori_height
 
 
 def generate_cam_label(cam_refined_list, keys, w, h):
