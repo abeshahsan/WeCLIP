@@ -63,7 +63,7 @@ def generate_cams(args):
         perform(0, dataset_list, args, model, bg_text_features, fg_text_features, cam)
     else:
         multiprocessing.spawn(perform, nprocs=args.num_workers,
-                              args=(dataset_list, args, model, bg_text_features, fg_text_features, cam))
+                              args=(0, dataset_list, args, model, bg_text_features, fg_text_features, cam))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate CAMs for Pascal VOC using CLIP')
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--split_file', type=str, default='./voc12/train.txt')
     parser.add_argument('--cam_out_dir', type=str, default='./final/ablation/voc_baseline')
     parser.add_argument('--model', type=str, default='/data1/zbf_data/Project2023/CLIP-ES-main/checkpoints/ViT-B-16.pt')
-    parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--num_workers', type=int, default=1)
     args = parser.parse_args()
 
     generate_cams(args)
