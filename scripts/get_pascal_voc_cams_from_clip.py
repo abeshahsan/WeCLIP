@@ -35,8 +35,7 @@ from torch import multiprocessing
 DEVICE = "cpu"
 
 def generate_cams(args):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(device)
+    device = DEVICE
 
     train_list = np.loadtxt(args.split_file, dtype=str)
     train_list = [x + '.jpg' for x in train_list]
