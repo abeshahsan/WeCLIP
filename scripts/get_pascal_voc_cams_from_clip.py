@@ -32,7 +32,7 @@ import warnings
 warnings.filterwarnings("ignore")
 from torch import multiprocessing
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = "cpu"
 
 def generate_cams(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
