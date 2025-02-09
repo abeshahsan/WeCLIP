@@ -29,6 +29,7 @@ from clip.clip_text import class_names, new_class_names, BACKGROUND_CATEGORY
 from torchvision.transforms import InterpolationMode
 import warnings
 warnings.filterwarnings("ignore")
+from torch import multiprocessing
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
