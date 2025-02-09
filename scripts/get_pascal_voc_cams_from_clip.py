@@ -43,8 +43,8 @@ def generate_cams(args):
         os.makedirs(args.cam_out_dir)
 
     model, _ = clip.load(args.model, device=device)
-    bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], model)
-    fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], model)
+    bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], model, device)
+    fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], model, device)
 
     target_layers = [model.visual.transformer.resblocks[-1].ln_1]
 
