@@ -11,8 +11,8 @@ torch.autograd.set_detect_anomaly(True)
 
 from tqdm import tqdm
 from pytorch_grad_cam.utils.image import scale_cam_image
-from .utils import parse_xml_to_dict, scoremap2bbox
-from .clip_text import class_names, new_class_names, BACKGROUND_CATEGORY#, imagenet_templates
+from utils import parse_xml_to_dict, scoremap2bbox
+from clip_text import class_names, new_class_names, BACKGROUND_CATEGORY#, imagenet_templates
 import argparse
 from lxml import etree
 import time
@@ -47,7 +47,7 @@ def split_dataset(dataset, n_splits):
 
     return dataset_list
 
-def zeroshot_classifier(classnames, templates, model, device):
+def zeroshot_classifier(classnames, templates, model):
     with torch.no_grad():
         zeroshot_weights = []
         for classname in classnames:
@@ -235,8 +235,8 @@ if __name__ == "__main__":
         os.makedirs(args.cam_out_dir)
 
     model, _ = clip.load(args.model, device=device)
-    bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], model, device)#['a rendering of a weird {}.'], model)
-    fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], model, device)#['a rendering of a weird {}.'], model)
+    bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], model)#['a rendering of a weird {}.'], model)
+    fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], model)#['a rendering of a weird {}.'], model)
 
     target_layers = [model.visual.transformer.resblocks[-1].ln_1]
     cam = GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform)
@@ -247,4 +247,3 @@ if __name__ == "__main__":
     else:
         multiprocessing.spawn(perform, nprocs=args.num_workers,
                               args=(dataset_list, args, model, bg_text_features, fg_text_features, cam))
-
