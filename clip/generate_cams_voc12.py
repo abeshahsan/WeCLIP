@@ -47,7 +47,7 @@ def split_dataset(dataset, n_splits):
 
     return dataset_list
 
-def zeroshot_classifier(classnames, templates, model):
+def zeroshot_classifier(classnames, templates, model, device='cuda'):
     with torch.no_grad():
         zeroshot_weights = []
         for classname in classnames:
