@@ -208,12 +208,12 @@ def perform(process_id, dataset_list, args, model, bg_text_features, fg_text_fea
         highres_cam_all_scales = highres_cam_all_scales[0]
         refined_cam_all_scales = refined_cam_all_scales[0]
 
-        for idx, cam in enumerate(refined_cam_all_scales):
-            cam_image = cam.cpu().numpy().astype(np.float32)
-            cam_image = (cam_image - cam_image.min()) / (cam_image.max() - cam_image.min())
-            cam_image = (cam_image * 255).astype(np.uint8)
-            cam_image = cv2.cvtColor(cam_image, cv2.COLOR_GRAY2BGR)
-            cv2.imwrite(os.path.join(args.cam_out_dir, f"{im.replace('.jpg', '')}_{keys[idx].item()}.png"), cam_image)
+        np.save(os.path.join(args.cam_out_dir, im.replace('jpg', 'npy')),
+                {"keys": keys.numpy(),
+                # "strided_cam": cam_per_scales.cpu().numpy(),
+                #"highres": highres_cam_all_scales.cpu().numpy().astype(np.float16),
+                "attn_highres": refined_cam_all_scales.cpu().numpy().astype(np.float16),
+                })
     return 0
 
 if __name__ == "__main__":
