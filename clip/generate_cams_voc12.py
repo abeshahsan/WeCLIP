@@ -12,7 +12,7 @@ torch.autograd.set_detect_anomaly(True)
 from tqdm import tqdm
 from pytorch_grad_cam.utils.image import scale_cam_image
 from .utils import parse_xml_to_dict, scoremap2bbox
-from clip_text import class_names, new_class_names, BACKGROUND_CATEGORY#, imagenet_templates
+from .clip_text import class_names, new_class_names, BACKGROUND_CATEGORY#, imagenet_templates
 import argparse
 from lxml import etree
 import time
