@@ -25,7 +25,7 @@ from WeCLIP_model.model_attn_aff_voc import WeCLIP
 from clip.generate_cams_voc12 import perform, zeroshot_classifier, split_dataset, reshape_transform
 import clip
 from pytorch_grad_cam import GradCAM
-from clip_text import class_names, new_class_names, BACKGROUND_CATEGORY
+from clip.clip_text import class_names, new_class_names, BACKGROUND_CATEGORY
 from torchvision.transforms import InterpolationMode
 import warnings
 warnings.filterwarnings("ignore")
