@@ -63,8 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--split_file', type=str, default='./voc12/train.txt')
     parser.add_argument('--cam_out_dir', type=str, default='./final/ablation/voc_baseline')
     parser.add_argument('--model', type=str, default='/data1/zbf_data/Project2023/CLIP-ES-main/checkpoints/ViT-B-16.pt')
-    parser.add_argument('--num_workers', type=int, default=1)
+    parser.add_argument('--num_workers', type=int, default=4)
     args = parser.parse_args()
 
     generate_cams(args)
-    print("Start training")
