@@ -208,7 +208,7 @@ def perform(process_id, dataset_list, args, model, bg_text_features, fg_text_fea
         highres_cam_all_scales = highres_cam_all_scales[0]
         refined_cam_all_scales = refined_cam_all_scales[0]
 
-        np.save(os.path.join(args.cam_out_dir, im.replace('jpg', 'npy')),
+        np.save(os.path.join(args.cam_out_dir, im.replace('jpg', 'jpg')),
                 {"keys": keys.numpy(),
                 # "strided_cam": cam_per_scales.cpu().numpy(),
                 #"highres": highres_cam_all_scales.cpu().numpy().astype(np.float16),
