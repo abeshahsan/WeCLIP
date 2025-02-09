@@ -2,6 +2,7 @@ import argparse
 import datetime
 import logging
 import os
+import shutil
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import random
 import sys
@@ -42,6 +43,13 @@ def generate_cams(args):
 
     if not os.path.exists(args.cam_out_dir):
         os.makedirs(args.cam_out_dir)
+    else:
+        for filename in os.listdir(args.cam_out_dir):
+            file_path = os.path.join(args.cam_out_dir, filename)
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
 
     model, _ = clip.load(args.model, device=device)
     bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], model, device)
