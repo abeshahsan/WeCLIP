@@ -162,7 +162,9 @@ class UniCLModel(nn.Module):
                 projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
 
 
-        return projected_fts_all, projected_attn_weight_list
+        self.original_last_fts = projected_fts_all[-1].clone()
+        self.original_last_attn_weight = projected_attn_weight_list[-1].clone()
+
         return projected_fts_all, projected_attn_weight_list
 
     def encode_text(self, text, norm=True):
@@ -193,6 +195,7 @@ class UniCLModel(nn.Module):
 
 
     def forward_last_layer(self, image_features, text_features):
+        image_features = image_features.permute(1, 0, 2)
         image_features = interpolate_and_project(image_features, (7, 7), 768)
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
