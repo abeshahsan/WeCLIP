@@ -137,7 +137,7 @@ class UniCLModel(nn.Module):
         return self.logit_scale.dtype
     
     def get_original_last_fts(self):
-        return self.original_last_fts, self.original_last_attn_weight
+        return self.original_last_fts.permute(1, 0, 2), self.original_last_attn_weight
     
     def encode_image(self, image, norm=True):
         b = image.shape[0]
