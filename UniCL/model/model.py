@@ -167,6 +167,7 @@ class UniCLModel(nn.Module):
             return projected_fts_all, projected_attn_weight_list
         else:
             x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
+    
             
             x = x[-1]
             attn = attn[-1]
