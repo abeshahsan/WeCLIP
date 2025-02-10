@@ -10,7 +10,7 @@ from transformers import CLIPTokenizer
 
 from UniCL.config import get_config
 from UniCL.model.model import build_unicl_model
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
 import random
 import numpy as np
 import torch
@@ -28,14 +28,23 @@ from utils.camutils import cams_to_affinity_label
 from utils.optimizer import PolyWarmupAdamW
 from WeCLIP_model.model_attn_aff_voc import WeCLIP
 
-from clip.generate_cams_voc12 import split_dataset, reshape_transform
-import clip
-from pytorch_grad_cam import GradCAM
-from clip.clip_text import class_names, new_class_names, BACKGROUND_CATEGORY
-from torchvision.transforms import InterpolationMode
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+torch.autograd.set_detect_anomaly(True)
+
+from pytorch_grad_cam.utils.image import scale_cam_image
+import argparse
+from lxml import etree
+import time
+from torch import multiprocessing
+from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize, RandomHorizontalFlip
+try:
+    from torchvision.transforms import InterpolationMode
+    BICUBIC = InterpolationMode.BICUBIC
+except ImportError:
+    BICUBIC = Image.BICUBIC
 import warnings
 warnings.filterwarnings("ignore")
-from torch import multiprocessing
+_CONTOUR_INDEX = 1 if cv2.__version__.split('.')[0] == '3' else 0
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
