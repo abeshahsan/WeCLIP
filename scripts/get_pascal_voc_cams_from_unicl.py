@@ -46,9 +46,9 @@ def build_tokenizer():
 
     return tokenizer
 
-tokenizer = build_tokenizer()
+tokenizer = build_tokenizer().to(DEVICE)
 
-def zeroshot_classifier(classnames, templates, model):
+def zeroshot_classifier(classnames, templates, model, device=DEVICE):
     with torch.no_grad():
         zeroshot_weights = []
         for classname in classnames:
