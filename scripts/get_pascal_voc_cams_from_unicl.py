@@ -39,16 +39,14 @@ from torch import multiprocessing
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def build_tokenizer(device=DEVICE):
+def build_tokenizer():
     
     tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
     os.environ['TOKENIZERS_PARALLELISM'] = 'true'
 
-    tokenizer = tokenizer.to(device)
-
     return tokenizer
 
-tokenizer = build_tokenizer()
+tokenizer = build_tokenizer().to(DEVICE)
 
 def zeroshot_classifier(classnames, templates, model, device=DEVICE):
     with torch.no_grad():
@@ -58,7 +56,7 @@ def zeroshot_classifier(classnames, templates, model, device=DEVICE):
             # texts = clip.tokenize(texts).cuda() #tokenize
             tokens = tokenizer(
                 texts, padding='max_length', truncation=True, max_length=77, return_tensors='pt'
-            )                
+            )               
             tokens = {key:val.cuda() for key,val in tokens.items()}
 
             class_embeddings = model.encode_text(tokens) #embed with text encoder
