@@ -215,12 +215,10 @@ class UniCLModel(nn.Module):
 
 
     def forward_last_layer(self, image_features, text_features):
-        image_features = interpolate_and_project(image_features, (7, 7), 768)
+        # image_features = interpolate_and_project(image_features, (7, 7), 768)
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
-        attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
-
-        print("HEEEEELP")
+        # attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
 
         return logits_per_image, attn_weight
 
