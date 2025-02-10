@@ -141,6 +141,9 @@ class UniCLModel(nn.Module):
         return self.original_last_fts, self.original_last_attn_weight
     
     def encode_image(self, image, norm=True, require_all_fts=False):
+        # resize image to 224x224
+        image = F.interpolate(image, size=(224, 224), mode='bilinear', align_corners=False)
+
         b = image.shape[0]
         
         if require_all_fts:
