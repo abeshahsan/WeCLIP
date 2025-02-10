@@ -88,13 +88,7 @@ class WeCLIP(nn.Module):
 
         """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
 
-        unicl_config = get_config()
-        unicl_config['MODEL']['PRETRAINED'] = unicl_model
-        self.encoder = build_unicl_model(unicl_config)
-        self.encoder = self.encoder.to(device)
-        self.encoder.eval()
-
-       
+        self.encoder = build_unicl_model(pretrained_path=unicl_model)
         
         # summary(self.encoder.image_encoder, (3, 224, 224))
 

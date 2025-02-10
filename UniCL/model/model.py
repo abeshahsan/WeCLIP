@@ -2,6 +2,7 @@ from genericpath import isfile
 import logging
 import os
 
+from UniCL.config import get_config
 import torch
 from torch import nn
 
@@ -161,9 +162,8 @@ class UniCLModel(nn.Module):
                 # x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
                 projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
 
-
         return projected_fts_all, projected_attn_weight_list
-        return projected_fts_all, projected_attn_weight_list
+        
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
@@ -201,14 +201,13 @@ class UniCLModel(nn.Module):
         return logits_per_image, attn_weight
 
 
-def build_unicl_model(config, **kwargs):
+def build_unicl_model(pretrained_path, config=get_config(), device="cuda", **kwargs):
     model = UniCLModel(config)
-    if config['MODEL']['PRETRAINED'] != '':
-        pretrained_path = config['MODEL']['PRETRAINED']
- 
-        model.from_pretrained(pretrained= pretrained_path,  verbose = False)
 
-    return model
+    model.from_pretrained(pretrained= pretrained_path,  verbose = False)
+    model = model.to(device)
+        
+    return model.eval()
 
 def interpolate_and_project(x, target_hw, target_channels):
     """
