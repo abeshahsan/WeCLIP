@@ -41,7 +41,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def reshape_transform(tensor, height=28, width=28):
     tensor = tensor.permute(1, 0, 2)
-    result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
+    result = tensor.reshape(tensor.size(0), 7, 7, tensor.size(2))
 
     # Bring the channels to the first dimension,
     # like in CNNs.
