@@ -4,8 +4,8 @@ import logging
 import os
 import shutil
 
-from UniCL.config import get_config
-from UniCL.model.model import build_unicl_model
+from ..UniCL.config import get_config
+from ..UniCL.model.model import build_unicl_model
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import random
 import sys
