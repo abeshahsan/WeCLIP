@@ -135,6 +135,8 @@ def perform(process_id, dataset_list, args, model, bg_text_features, fg_text_fea
             image = image.to(device_id)
             image_features, attn_weight_list = model.encode_image(image)
 
+            print("image_features", image_features.shape)
+
             cam_to_save = []
             highres_cam_to_save = []
             refined_cam_to_save = []
