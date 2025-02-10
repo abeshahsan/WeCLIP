@@ -143,43 +143,28 @@ class UniCLModel(nn.Module):
     def encode_image(self, image, norm=True, require_all_fts=False):
         b = image.shape[0]
         
-        if require_all_fts:
-            x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
+        x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
 
-            projected_fts_all = []
-            projected_attn_weight_list = []
+        projected_fts_all = []
+        projected_attn_weight_list = []
 
-            self.original_last_fts = x[-1].clone()
-            self.original_last_attn_weight = attn[-1].clone()
+        self.original_last_fts = x[-1].clone()
+        self.original_last_attn_weight = attn[-1].clone()
 
-            for i, fts in enumerate(x):
-                projected_fts_all.append(interpolate_and_project(fts, (14, 14), 768))
-                projected_attn_weight_list.append(interpolate_and_project(attn[i], (14, 14), 196))
-            
-            del x, attn
+        for i, fts in enumerate(x):
+            projected_fts_all.append(interpolate_and_project(fts, (14, 14), 768))
+            projected_attn_weight_list.append(interpolate_and_project(attn[i], (14, 14), 196))
+        
+        del x, attn
 
-            for i in range(len(projected_fts_all)):
-                # x[i] = x[i] @ self.image_projection
-                if norm:
-                    # x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
-                    projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
-
-            return projected_fts_all, projected_attn_weight_list
-        else:
-            x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
-    
-            
-            x = x[-1]
-            attn = attn[-1]
-
-            self.original_last_fts = x
-            self.original_last_attn_weight = attn
-
-            # x = x @ self.image_projection
+        for i in range(len(projected_fts_all)):
+            # x[i] = x[i] @ self.image_projection
             if norm:
-                x = x / x.norm(dim=-1, keepdim=True)
+                # x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
+                projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
 
-            return x, attn
+        return projected_fts_all, projected_attn_weight_list
+
         
 
     def encode_text(self, text, norm=True):
