@@ -57,7 +57,7 @@ def zeroshot_classifier(classnames, templates, model, device=DEVICE):
             tokens = tokenizer(
                 texts, padding='max_length', truncation=True, max_length=77, return_tensors='pt'
             )               
-            tokens = {key:val.cuda() for key,val in tokens.items()}
+            tokens = {key:val.to(device) for key,val in tokens.items()}
 
             class_embeddings = model.encode_text(tokens) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
