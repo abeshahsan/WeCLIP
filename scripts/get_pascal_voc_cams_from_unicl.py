@@ -86,7 +86,7 @@ def generate_cams(args):
     bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], model, device)
     fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], model, device)
 
-    target_layers = [model.visual.transformer.resblocks[-1].ln_1]
+    target_layers = [model.image_encoder.layers[-1].blocks[-1].norm2]
 
     cam = GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform)
 
