@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import shutil
+from transformers import CLIPTokenizer
 
 from UniCL.config import get_config
 from UniCL.model.model import build_unicl_model
