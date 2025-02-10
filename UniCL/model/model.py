@@ -220,6 +220,8 @@ class UniCLModel(nn.Module):
 
         attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
 
+        print("HEEEEELP")
+
         return logits_per_image, attn_weight
 
 
