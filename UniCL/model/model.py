@@ -2,7 +2,7 @@ from genericpath import isfile
 import logging
 import os
 
-from UniCL.config import get_config
+from ..config import get_config
 import torch
 from torch import nn
 
