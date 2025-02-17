@@ -206,7 +206,7 @@ def build_unicl_model(config, **kwargs):
     if config['MODEL']['PRETRAINED'] != '':
         pretrained_path = config['MODEL']['PRETRAINED']
  
-        model.from_pretrained(pretrained= pretrained_path,  verbose = False)
+        model.from_pretrained(pretrained= pretrained_path,  verbose=config['BACKBONE']['VERBOSE'])
 
     return model
 
