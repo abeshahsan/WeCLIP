@@ -189,6 +189,10 @@ _C.TEST = CN()
 # Whether to use center crop when testing
 _C.TEST.CROP = True
 
+_C.BACKBONE = CN()
+_C.BACKBONE.VERBOSE = False
+
+
 # -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
@@ -266,6 +270,8 @@ def update_config(config, args):
         config.THROUGHPUT_MODE = True
     if args.debug:
         config.DEBUG_MODE = True
+    if args.backbone_verbose:
+        config.BACKBONE.VERBOSE = True
 
     if config.DATA.DATASET == 'imagewoof':
         config.MODEL.NUM_CLASSES = 10

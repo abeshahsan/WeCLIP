@@ -102,7 +102,7 @@ class UniCLModel(nn.Module):
         }
         need_init_state_dict = {}
         image_encoder_state_dict = {}
-        for k, v in pretrained_dict.items():
+        for k, v in pretrained_dict['model'].items():
             need_init = (
                 k.split('.')[0] in pretrained_layers
                 or pretrained_layers[0] == '*'
