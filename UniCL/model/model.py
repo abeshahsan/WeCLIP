@@ -85,7 +85,7 @@ class UniCLModel(nn.Module):
 
         return model_dict_updated
 
-    def from_pretrained(self, pretrained='', pretrained_layers=[], verbose=True):
+    def from_pretrained(self, pretrained='', pretrained_layers=['*'], verbose=True):
         
         if not os.path.isfile(pretrained):
             logger.warning(f'=> Pretrained model ({pretrained}) is not a file, skip init weight')
