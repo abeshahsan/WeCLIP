@@ -97,12 +97,12 @@ class UniCLModel(nn.Module):
         pretrained_dict = self._convert_old_weights(pretrained_dict)
         model_dict = self.state_dict()
         pretrained_dict = {
-            k: v for k, v in pretrained_dict.items()
+            k: v for k, v in pretrained_dict['model'].items()
             if k in model_dict.keys()
         }
         need_init_state_dict = {}
         image_encoder_state_dict = {}
-        for k, v in pretrained_dict['model'].items():
+        for k, v in pretrained_dict.items():
             need_init = (
                 k.split('.')[0] in pretrained_layers
                 or pretrained_layers[0] == '*'
