@@ -221,21 +221,21 @@ def interpolate_and_project(x, target_hw, target_channels):
     Resizes and optionally projects the tensor to match the target size and channels.
     x: Input tensor of shape (b, hw, c)
     """
-    b, hw, c = x.shape
-    h = w = int(hw ** 0.5)  # Assuming square spatial dimensions
-    assert h * w == hw, "Input spatial dimensions must form a square"
+    # b, hw, c = x.shape
+    # h = w = int(hw ** 0.5)  # Assuming square spatial dimensions
+    # assert h * w == hw, "Input spatial dimensions must form a square"
 
-    # Reshape to (b, c, h, w)
-    x = x.permute(0, 2, 1).reshape(b, c, h, w)
+    # # Reshape to (b, c, h, w)
+    # x = x.permute(0, 2, 1).reshape(b, c, h, w)
 
-    # Resize to target spatial dimensions
-    x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
+    # # Resize to target spatial dimensions
+    # x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
 
-    # Project channels if needed
-    if c != target_channels:
-        projection_layer = nn.Conv2d(c, target_channels, kernel_size=1).cuda()
-        x = projection_layer(x)
+    # # Project channels if needed
+    # if c != target_channels:
+    #     projection_layer = nn.Conv2d(c, target_channels, kernel_size=1).cuda()
+    #     x = projection_layer(x)
 
-    x = x.reshape(b, -1, target_channels)
+    # x = x.reshape(b, -1, target_channels)
 
     return x
