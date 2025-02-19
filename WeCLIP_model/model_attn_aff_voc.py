@@ -58,7 +58,7 @@ def zeroshot_classifier(classnames, templates, model):
             )                
             tokens = {key:val.cuda() for key,val in tokens.items()}
 
-            class_embeddings = model.encode_text(tokens.cuda()) #embed with text encoder
+            class_embeddings = model.encode_text(tokens) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
             class_embedding = class_embeddings.mean(dim=0)
             class_embedding /= class_embedding.norm()
