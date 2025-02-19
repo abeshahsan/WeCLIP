@@ -34,6 +34,7 @@ parser.add_argument("--work_dir", default=None, type=str, help="work_dir")
 parser.add_argument("--radius", default=8, type=int, help="radius")
 parser.add_argument("--crop_size", default=224, type=int, help="crop_size")
 parser.add_argument("--unicl_pretrain_path", default=None, type=str, help="unicl_pretrain_path")
+parser.add_argument("--backbone-verbose", action="store_true", help="backbone-verbose")
 
 
 def setup_seed(seed):

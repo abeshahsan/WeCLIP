@@ -86,7 +86,7 @@ class UniCLModel(nn.Module):
 
         return model_dict_updated
 
-    def from_pretrained(self, pretrained='', pretrained_layers=[], verbose=True):
+    def from_pretrained(self, pretrained='', pretrained_layers=['*'], verbose=True):
         
         if not os.path.isfile(pretrained):
             logger.warning(f'=> Pretrained model ({pretrained}) is not a file, skip init weight')
@@ -98,7 +98,7 @@ class UniCLModel(nn.Module):
         pretrained_dict = self._convert_old_weights(pretrained_dict)
         model_dict = self.state_dict()
         pretrained_dict = {
-            k: v for k, v in pretrained_dict.items()
+            k: v for k, v in pretrained_dict['model'].items()
             if k in model_dict.keys()
         }
         need_init_state_dict = {}
@@ -138,7 +138,7 @@ class UniCLModel(nn.Module):
         return self.logit_scale.dtype
     
     def get_original_last_fts(self):
-        return self.original_last_fts, self.original_last_attn_weight
+        return self.original_last_fts.permute(1, 0, 2), self.original_last_attn_weight
     
     def encode_image(self, image, norm=True, require_all_fts=False):
         # resize image to 224x224
@@ -167,25 +167,8 @@ class UniCLModel(nn.Module):
                     # x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
                     projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
 
-            return projected_fts_all, projected_attn_weight_list
-        else:
-            x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
 
-            print("HEEEEELP")
-    
-            
-            x = x[-1]
-            attn = attn[-1]
-
-            self.original_last_fts = x
-            self.original_last_attn_weight = attn
-
-            # x = x @ self.image_projection
-            if norm:
-                x = x / x.norm(dim=-1, keepdim=True)
-
-            return x, attn
-        
+        return projected_fts_all, projected_attn_weight_list
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
@@ -215,6 +198,7 @@ class UniCLModel(nn.Module):
 
 
     def forward_last_layer(self, image_features, text_features):
+        image_features = image_features.permute(1, 0, 2)
         # image_features = interpolate_and_project(image_features, (7, 7), 768)
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
@@ -225,11 +209,12 @@ class UniCLModel(nn.Module):
 
 def build_unicl_model(pretrained_path, config=get_config(), device="cuda", **kwargs):
     model = UniCLModel(config)
+    if config['MODEL']['PRETRAINED'] != '':
+        pretrained_path = config['MODEL']['PRETRAINED']
+ 
+        model.from_pretrained(pretrained= pretrained_path,  verbose=config['BACKBONE']['VERBOSE'])
 
-    model.from_pretrained(pretrained= pretrained_path,  verbose = False)
-    model = model.to(device)
-        
-    return model.eval()
+    return model
 
 def interpolate_and_project(x, target_hw, target_channels):
     """
