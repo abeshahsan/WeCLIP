@@ -1,6 +1,6 @@
 MODEL:
   NAME: unicl_swin_tiny
-  DIM_PROJECTION: 768  
+  DIM_PROJECTION: 512  
   IMAGE_ENCODER:
     TYPE: swin
     DROP_PATH_RATE: 0.2
