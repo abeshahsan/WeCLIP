@@ -58,7 +58,8 @@ def zeroshot_classifier(classnames, templates, model):
             )                
             tokens = {key:val.cuda() for key,val in tokens.items()}
 
-            print(tokens[list(tokens.keys())[0]].device)
+            model.eval()
+            model.cuda()
 
             class_embeddings = model.encode_text(tokens) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
@@ -238,6 +239,6 @@ def generate_unicl_features(image, encoder: UniCLModel):
     h, w = image.shape[-2], image.shape[-1]
     image = image.cuda()
     
-    image_features_all, attn_weight_list = model.encode_image(image)
+    image_features_all, attn_weight_list = model.encode_image(image, require_all_fts=True)
         
     return image_features_all, attn_weight_list
