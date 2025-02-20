@@ -55,7 +55,7 @@ _C.MODEL.LABEL_SMOOTHING = 0.1
 # Whether load pretrained model
 _C.MODEL.PRETRAINED = ''
 # Projection dimension
-_C.MODEL.DIM_PROJECTION = 768
+_C.MODEL.DIM_PROJECTION = 512
 # Mode specific
 _C.MODEL.SPEC = CN(new_allowed=True)
 # -----------------------------------------------------------------------------
