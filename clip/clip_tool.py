@@ -146,7 +146,9 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
 
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
-
+        
+        cam_outdir = '/content/initial_cams'
+        os.makedirs(cam_outdir, exist_ok=True)
         plt.figure(figsize=(6.4, 4.8))  
         plt.imshow(grayscale_cam_highres, cmap='viridis')
         plt.colorbar()
