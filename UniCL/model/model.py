@@ -116,7 +116,7 @@ class UniCLModel(nn.Module):
                     if verbose:
                         logger.info(f'=> init {k} from {pretrained}')
 
-                    need_init_state_dict[k] = v
+                need_init_state_dict[k] = v
         self.image_encoder.load_state_dict(image_encoder_state_dict, strict=False)
         self.load_state_dict(need_init_state_dict, strict=False)
 
@@ -179,7 +179,8 @@ class UniCLModel(nn.Module):
         else:
             x = x[:, 0]
 
-        x = x @ self.text_projection
+        # x = x @ self.text_projection
+        x = project_text(768, x)
 
         if norm:
             x = x / x.norm(dim=-1, keepdim=True)
@@ -216,6 +217,11 @@ def build_unicl_model(pretrained_path, config=get_config(), device="cuda", **kwa
 
     return model
 
+def project_text(target_channels, x):
+    projection_layer = nn.Linear(x.size(-1), target_channels).cuda()
+    x = projection_layer(x)
+    return x
+
 def interpolate_and_project(x, target_hw, target_channels):
     """
     Resizes and optionally projects the tensor to match the target size and channels.
@@ -228,8 +234,10 @@ def interpolate_and_project(x, target_hw, target_channels):
     # Reshape to (b, c, h, w)
     x = x.permute(0, 2, 1).reshape(b, c, h, w)
 
-    # Resize to target spatial dimensions
-    x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
+    if h != target_hw[0] and w!= target_hw[1]:
+
+        # Resize to target spatial dimensions
+        x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
 
     # Project channels if needed
     if c != target_channels:
