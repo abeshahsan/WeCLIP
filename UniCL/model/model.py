@@ -222,8 +222,10 @@ def interpolate_and_project(x, target_hw, target_channels):
     # Reshape to (b, c, h, w)
     x = x.permute(0, 2, 1).reshape(b, c, h, w)
 
-    # Resize to target spatial dimensions
-    x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
+    if h != target_hw[0] and w!= target_hw[1]:
+
+        # Resize to target spatial dimensions
+        x = F.interpolate(x, size=target_hw, mode='bilinear', align_corners=False)
 
     # Project channels if needed
     if c != target_channels:
