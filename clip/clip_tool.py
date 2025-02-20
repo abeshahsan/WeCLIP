@@ -15,7 +15,7 @@ except ImportError:
 from pytorch_grad_cam.utils.image import scale_cam_image
 import cv2
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class ClipOutputTarget:
     def __init__(self, category):
@@ -146,6 +146,13 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
 
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
+
+        plt.figure(figsize=(6.4, 4.8))  
+        plt.imshow(grayscale_cam_highres, cmap='viridis')
+        plt.colorbar()
+        plt.axis('off')
+        plt.savefig(f"/content/initial_cams/grayscale_cam_{os.path.basename(img_path), label}.png")  # Save each iteration's image
+        plt.close()
 
         if idx == 0:
             if require_seg_trans == True:
