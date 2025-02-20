@@ -173,7 +173,8 @@ class UniCLModel(nn.Module):
         else:
             x = x[:, 0]
 
-        x = x @ self.text_projection
+        # x = x @ self.text_projection
+        x = project_text(768, x)
 
         if norm:
             x = x / x.norm(dim=-1, keepdim=True)
@@ -209,6 +210,11 @@ def build_unicl_model(config, **kwargs):
         model.from_pretrained(pretrained= pretrained_path,  verbose=config['BACKBONE']['VERBOSE'])
 
     return model
+
+def project_text(target_channels, x):
+    projection_layer = nn.Linear(x.size(-1), target_channels).cuda()
+    x = projection_layer(x)
+    return x
 
 def interpolate_and_project(x, target_hw, target_channels):
     """
