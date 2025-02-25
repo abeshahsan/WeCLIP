@@ -18,7 +18,6 @@ from UniCL.model.model import interpolate_and_project
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
-from torchsummary import summary 
 
 
 def Normalize_clip():

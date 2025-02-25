@@ -28,8 +28,10 @@ import clip
 from pytorch_grad_cam import GradCAM
 from clip.clip_text import class_names, new_class_names, BACKGROUND_CATEGORY
 from torchvision.transforms import InterpolationMode
+
 import warnings
 warnings.filterwarnings("ignore")
+
 from torch import multiprocessing
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -38,7 +40,7 @@ def generate_cams(args):
     device = DEVICE
 
     train_list = np.loadtxt(args.split_file, dtype=str)
-    train_list = [x + '.jpg' for x in train_list]
+    train_list = [x + '.jpg' for x in train_list[:5]]
 
     if not os.path.exists(args.cam_out_dir):
         os.makedirs(args.cam_out_dir)
@@ -67,10 +69,10 @@ def generate_cams(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate CAMs for Pascal VOC using CLIP')
-    parser.add_argument('--img_root', type=str, default='/data1/zbf_data/dataset/VOCdevkit_pure/VOC2012/JPEGImages')
+    parser.add_argument('--img_root', type=str, default='C:/Users/abesh/Downloads/archive/VOC2012/JPEGImages')
     parser.add_argument('--split_file', type=str, default='./voc12/train.txt')
-    parser.add_argument('--cam_out_dir', type=str, default='./final/ablation/voc_baseline')
-    parser.add_argument('--model', type=str, default='/data1/zbf_data/Project2023/CLIP-ES-main/checkpoints/ViT-B-16.pt')
+    parser.add_argument('--cam_out_dir', type=str, default='./cam_outs')
+    parser.add_argument('--model', type=str, default='./pretrained/checkpoints/ViT-B-16.pt')
     parser.add_argument('--num_workers', type=int, default=1)
     args = parser.parse_args()
 
