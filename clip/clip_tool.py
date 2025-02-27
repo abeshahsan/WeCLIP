@@ -15,7 +15,7 @@ except ImportError:
 from pytorch_grad_cam.utils.image import scale_cam_image
 import cv2
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class ClipOutputTarget:
     def __init__(self, category):
@@ -24,8 +24,6 @@ class ClipOutputTarget:
         if len(model_output.shape) == 1:
             return model_output[self.category]
         return model_output[:, self.category]
-
-
 
 
 def generate_clip_fts(image, model, require_all_fts=True):
@@ -148,11 +146,20 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
 
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
+        
+        cam_outdir = '/content/initial_cams'
+        os.makedirs(cam_outdir, exist_ok=True)
+        plt.figure(figsize=(6.4, 4.8))  
+        plt.imshow(grayscale_cam_highres, cmap='viridis')
+        plt.colorbar()
+        plt.axis('off')
+        plt.savefig(f"/content/initial_cams/grayscale_cam_{os.path.basename(img_path), label}.png")  # Save each iteration's image
+        plt.close()
 
         if idx == 0:
             if require_seg_trans == True:
                 attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
-                attn_weight = attn_weight[:, 1:, 1:][-6:] #-8
+                attn_weight = attn_weight[:, :, :][-6:] #-8
 
                 # attn_diff = torch.abs(seg_attn - attn_weight)
                 attn_diff = seg_attn - attn_weight
@@ -170,7 +177,7 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
                 attn_weight = attn_weight * seg_attn.squeeze(0).detach()
             else:
                 attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
-                attn_weight = attn_weight[:, 1:, 1:][-8:]
+                attn_weight = attn_weight[:, :, :][-8:]
                 attn_weight = torch.mean(attn_weight, dim=0)  # (1, hw, hw)
                 attn_weight = attn_weight.detach()
             _trans_mat = compute_trans_mat(attn_weight)
@@ -191,12 +198,10 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         cam_refined = torch.matmul(trans_mat, cam_to_refine).reshape(h // 16, w // 16)
         cam_refined_list.append(cam_refined)
 
-    if mode == 'train':
-        return cam_refined_list, keys, w, h
-    else:
-        return cam_refined_list, keys, ori_width, ori_height
-
-
+    # if mode == 'train':
+    return cam_refined_list, keys, w, h
+    # else:
+        # return cam_refined_list, keys, ori_width, ori_height
 
 
 def generate_cam_label(cam_refined_list, keys, w, h):
@@ -214,8 +219,6 @@ def generate_cam_label(cam_refined_list, keys, w, h):
     refined_cam_all_scales = refined_cam_all_scales[0]
     
     return {'keys': keys.numpy(), 'refined_cam':refined_cam_all_scales}
-
-
 
 
 def perform_single_coco_cam(img_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,

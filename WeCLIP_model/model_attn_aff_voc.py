@@ -11,8 +11,14 @@ import os
 from torchvision.transforms import Compose, Normalize
 from .Decoder.TransDecoder import DecoderTransformer
 from WeCLIP_model.PAR import PAR
+from UniCL.model.model import UniCLModel
+from UniCL.model.model import build_unicl_model
+from UniCL.config import get_config
+from UniCL.model.model import interpolate_and_project
 
-
+from transformers import CLIPTokenizer
+from transformers import AutoTokenizer
+from torchsummary import summary 
 
 
 def Normalize_clip():
@@ -21,23 +27,38 @@ def Normalize_clip():
 
 
 def reshape_transform(tensor, height=28, width=28):
-    tensor = tensor.permute(1, 0, 2)
-    result = tensor[:, 1:, :].reshape(tensor.size(0), height, width, tensor.size(2))
+    
+    tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
+
+    # tensor = tensor.permute(1, 0, 2)
+    result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
 
     # Bring the channels to the first dimension,
     # like in CNNs.
     result = result.transpose(2, 3).transpose(1, 2)
     return result
 
+def build_tokenizer():
+    
+    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+    os.environ['TOKENIZERS_PARALLELISM'] = 'true'
 
+    return tokenizer
+
+tokenizer = build_tokenizer()
 
 def zeroshot_classifier(classnames, templates, model):
     with torch.no_grad():
         zeroshot_weights = []
         for classname in classnames:
             texts = [template.format(classname) for template in templates] #format with class
-            texts = clip.tokenize(texts).cuda() #tokenize
-            class_embeddings = model.encode_text(texts) #embed with text encoder
+            # texts = clip.tokenize(texts).cuda() #tokenize
+            tokens = tokenizer(
+                texts, padding='max_length', truncation=True, max_length=77, return_tensors='pt'
+            )                
+            tokens = {key:val.cuda() for key,val in tokens.items()}
+
+            class_embeddings = model.encode_text(tokens) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
             class_embedding = class_embeddings.mean(dim=0)
             class_embedding /= class_embedding.norm()
@@ -58,19 +79,39 @@ def _refine_cams(ref_mod, images, cams, valid_key):
 
 
 class WeCLIP(nn.Module):
-    def __init__(self, num_classes=None, clip_model=None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
+    def __init__(self, args = None, num_classes=None, clip_model=None, unicl_model = None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
         super().__init__()
         self.num_classes = num_classes
         self.embedding_dim = embedding_dim
 
-        self.encoder, _ = clip.load(clip_model, device=device)
+        # self.encoder, _ = clip.load(clip_model, device=device)
+
+        """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
+
+        unicl_config = get_config()
+        unicl_config['MODEL']['PRETRAINED'] = unicl_model
+        self.encoder = build_unicl_model(unicl_config)
+        self.encoder = self.encoder.to(device)
+        self.encoder.eval()
+
+       
+        
+        # summary(self.encoder.image_encoder, (3, 224, 224))
+
+        # for param in self.encoder.parameters():
+        #     param.requires_grad = False
 
         for name, param in self.encoder.named_parameters():
-            if "11" not in name:
-                param.requires_grad=False
+            if "image_encoder.layers.3.blocks.1" not in name:
+                param.requires_grad = False
+            # print(f"{name}: requires_grad = {param.requires_grad}")
 
-        for name, param in self.encoder.named_parameters():
-            print(name, param.requires_grad)
+        # for name, param in self.encoder.named_parameters():
+        #     if "11" not in name:
+        #         param.requires_grad=False
+
+        # for name, param in self.encoder.named_parameters():
+        #     print(name, param.requires_grad)
 
         self.in_channels = in_channels
 
@@ -81,7 +122,13 @@ class WeCLIP(nn.Module):
         self.bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], self.encoder)
         self.fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], self.encoder)
 
-        self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
+        """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
+
+
+        # self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
+        self.target_layers = [self.encoder.image_encoder.layers[-1].blocks[-1].norm2]
+
+
         self.grad_cam = GradCAM(model=self.encoder, target_layers=self.target_layers, reshape_transform=reshape_transform)
         self.root_path = os.path.join(dataset_root_path, 'SegmentationClassAug')
         self.cam_bg_thres = 1
@@ -110,16 +157,29 @@ class WeCLIP(nn.Module):
         self.encoder.eval()
         self.iter_num += 1
 
-        fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
+        #resize image to 224x224
+
+        # img = F.interpolate(img, size=(224, 224), mode='bilinear', align_corners=False)
+
+        # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
+        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder, )
+
+        # for x in fts_all:
+        #     print(x.shape)
+        # print()
+        # for attn in attn_weight_list:
+        #     print(attn.shape)
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
         if self.require_all_fts==True:
-            cam_fts_all = fts_all_stack[-1].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
+            cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
         else:
-            cam_fts_all = fts_all_stack.permute(2, 1, 0, 3)
+            cam_fts_all = self.encoder.get_original_last_fts()[0].permute(2, 1, 0, 3)
 
-        all_img_tokens = fts_all_stack[:, 1:, ...]
+        # all_img_tokens = fts_all_stack[:, 1:, ...]
+        all_img_tokens = fts_all_stack
+
         img_tokens_channel = all_img_tokens.size(-1)
         all_img_tokens = all_img_tokens.permute(0, 2, 3, 1)
         all_img_tokens = all_img_tokens.reshape(-1, b, img_tokens_channel, h//16, w //16) #(11, b, c, h, w)
@@ -173,3 +233,15 @@ class WeCLIP(nn.Module):
         all_cam_labels = torch.stack(cam_list, dim=0)
 
         return seg, all_cam_labels, attn_pred
+
+def generate_unicl_features(image, encoder: UniCLModel):
+    model:UniCLModel = encoder.cuda()
+
+    if len(image.shape) == 3:
+        image = image.unsqueeze(0)
+    h, w = image.shape[-2], image.shape[-1]
+    image = image.cuda()
+    
+    image_features_all, attn_weight_list = model.encode_image(image)
+        
+    return image_features_all, attn_weight_list
