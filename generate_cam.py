@@ -32,7 +32,7 @@ def zeroshot_classifier(classnames, templates, model, device='cuda'):
 
 
 parser = argparse.ArgumentParser(description='Generate CAMs for Pascal VOC using CLIP')
-parser.add_argument('--model', type=str, default='WeCLIP_model/pretrained/ViT-B-16.pt', help='Path to CLIP model')
+parser.add_argument('--model', type=str, default='checkpoint/ViT-B-16.pt', help='Path to CLIP model')
 args = parser.parse_args()
 
 
@@ -67,7 +67,12 @@ transform = Compose([
             std=(0.26862954, 0.26130258, 0.27577711)),
     ])
 
-image_name = 'cat.jpg'
+image_name = 'person.png'
+# image_name = 'cat.jpg'
+# image_name = 'aeroplane.jpg'
+# image_name = 'bike.jpg'
+image_name = 'emma-sunglass.jpg'
+
 image = Image.open(image_name).convert('RGB')
 
 input_tensor = transform(image).unsqueeze(0).to(DEVICE)
@@ -76,7 +81,7 @@ image_features, attn_list = model.encode_image(input_tensor, input_tensor.shape[
 
 final_image_features = model.forward_last_layer(image_features, torch.cat([fg_text_features], dim=0))[0]
 
-score = final_image_features[0, torch.argmax(final_image_features)]
+score = final_image_features[0, 14]
 
 # score = logits_per_image.sum()
 model.zero_grad()
