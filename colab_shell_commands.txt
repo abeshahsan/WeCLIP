@@ -1,0 +1,8 @@
+
+python -W ignore test_unicl.py \
+--cfg 'configs/unicl_swin_tiny.yaml' \
+--dataset 'voc' \
+--data-path 'content/VOC2012' \
+--unicl_model 'checkpoint/yfcc14m.pth' \
+--name-list-path 'datasets/voc' \
+--batch-size 1

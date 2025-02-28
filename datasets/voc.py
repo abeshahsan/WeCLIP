@@ -1,3 +1,5 @@
+import cv2
+from matplotlib import pyplot as plt
 import numpy as np
 from numpy.lib.utils import deprecate
 import torch
@@ -78,6 +80,7 @@ class VOC12ClsDataset(VOC12Dataset):
                  name_list_dir=None,
                  split='train',
                  stage='train',
+                 resize_shape=[224, 224],
                  resize_range=[512, 640],
                  rescale_range=[0.5, 2.0],
                  crop_size=512,
@@ -89,6 +92,7 @@ class VOC12ClsDataset(VOC12Dataset):
 
         super().__init__(root_dir, name_list_dir, split, stage)
 
+        self.resize_shape = resize_shape
         self.aug = aug
         self.ignore_index = ignore_index
         self.resize_range = resize_range
@@ -107,38 +111,26 @@ class VOC12ClsDataset(VOC12Dataset):
         return len(self.name_list)
 
     def __transforms(self, image):
+        # Resize image to a fixed size
+        image = cv2.resize(image, (224, 224))
+        
         img_box = None
         if self.aug:
             image = np.array(image)
-            # print('image', image.shape)
-            '''
-            if self.resize_range: 
-                image, label = transforms.random_resize(
-                    image, label, size_range=self.resize_range)
-            '''
             if self.rescale_range:
                 image = transforms.random_scaling(
                     image,
                     scale_range=self.rescale_range)
-            
             if self.img_fliplr:
                 image = transforms.random_fliplr(image)
-            #image = self.color_jittor(image)
             if self.crop_size:
                 image, img_box = transforms.random_crop(
                     image,
                     crop_size=self.crop_size,
-                    mean_rgb=[0,0,0],#[123.675, 116.28, 103.53], 
+                    mean_rgb=[0,0,0],
                     ignore_index=self.ignore_index)
-        '''
-        if self.stage != "train":
-            image = transforms.img_resize_short(image, min_size=min(self.resize_range))
-        '''
-        image = transforms.normalize_img(image)
-        # image = self.normalize(image)
-        # image = image.numpy()
         
-        ## to chw
+        image = transforms.normalize_img(image)
         image = np.transpose(image, (2, 0, 1))
 
         return image, img_box
@@ -214,19 +206,12 @@ class VOC12SegDataset(VOC12Dataset):
         return len(self.name_list)
 
     def __transforms(self, image, label):
+        # Resize image and label to a fixed size
+        image = cv2.resize(image, (224, 224))
+        label = cv2.resize(label, (224, 224), interpolation=cv2.INTER_NEAREST)
+
         if self.aug:
             image = np.array(image)
-            '''
-            if self.resize_range: 
-                image, label = transforms.random_resize(
-                    image, label, size_range=self.resize_range)
-            
-            if self.rescale_range:
-                image, label = transforms.random_scaling(
-                    image,
-                    label,
-                    scale_range=self.rescale_range)
-            '''
             if self.img_fliplr:
                 image, label = transforms.random_fliplr(image, label)
             image = self.color_jittor(image)
@@ -235,31 +220,15 @@ class VOC12SegDataset(VOC12Dataset):
                     image,
                     label,
                     crop_size=self.crop_size,
-                    # mean_rgb=[123.675, 116.28, 103.53], 
                     ignore_index=self.ignore_index)
-        '''
-        if self.stage != "train":
-            image = transforms.img_resize_short(image, min_size=min(self.resize_range))
-        '''
-        # image = self.normalize(image)
-        # image = image.numpy()
         
         image = transforms.normalize_img(image)
-        ## to chw
         image = np.transpose(image, (2, 0, 1))
 
         return image, label
 
     def __getitem__(self, idx):
         img_name, image, label = super().__getitem__(idx)
-#         ori_height = image.size[1]
-#         ori_width = image.size[0]
-        
-#         new_height = int(np.ceil(self.scale * int(ori_height) / self.patch_size) * self.patch_size)
-#         new_width = int(np.ceil(self.scale * int(ori_width) / self.patch_size) * self.patch_size)
-        
-#         image = Resize((new_height, new_width), interpolation=BICUBIC)(image)
-#         image = image.convert("RGB")
 
         image, label = self.__transforms(image=image, label=label)
 

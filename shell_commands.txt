@@ -1,0 +1,20 @@
+conda install pytorch==1.7.1 torchvision==0.8.2 cudatoolkit=10.1 -c pytorch -c nvidia
+
+pip install -r requirements.txt
+
+python -W ignore test_unicl.py `
+--cfg 'configs/unicl_swin_tiny.yaml' `
+--dataset 'voc' `
+--data-path 'C:/Users/abesh/Downloads/archive/VOC2012' `
+--unicl_model 'checkpoint/in1k.pth' `
+--name-list-path 'datasets/voc' `
+--batch-size 1 `
+
+
+python -W ignore test_unicl.py `
+--cfg 'configs/unicl_swin_base.yaml' `
+--dataset 'voc' `
+--data-path 'C:/Users/abesh/Downloads/archive/VOC2012' `
+--unicl_model 'checkpoint/in21k_swin_base.pth' `
+--name-list-path 'datasets/voc' `
+--batch-size 1 `
