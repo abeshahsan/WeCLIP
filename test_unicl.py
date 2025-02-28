@@ -110,7 +110,7 @@ def test_unicl_classification(cfg, args):
     # Switch to evaluation mode (but allow gradients for the image branch)
     
 
-    image_name = 'person.png'
+    image_name = 'bike.jpg'
     image = Image.open(image_name).convert('RGB')
     
     # Preprocess the image
@@ -142,15 +142,18 @@ def test_unicl_classification(cfg, args):
     # text_embeddings_norm = text_embeddings / text_embeddings.norm(dim=1, keepdim=True)
     # cosine similarity as logits
     logit_scale = model.logit_scale.exp()
+    # logits_per_image = logit_scale * image_features @ text_embeddings.t()
     logits_per_image = logit_scale * image_features @ text_embeddings.t()
 
     # shape = [global_batch_size, global_batch_size]
     # logits_per_image = logits_per_image.softmax(dim=-1)
+
+    print(logits_per_image)
     
     # print(logits_per_image)
 
     pred = torch.argmax(logits_per_image)
-    score = logits_per_image[0, pred]
+    score = logits_per_image[0, 13]
     print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
     # score = logits_per_image.sum()
     model.zero_grad()
