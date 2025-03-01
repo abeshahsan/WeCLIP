@@ -1,4 +1,4 @@
-
+import os
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -8,25 +8,18 @@ import torchvision
 from config import get_config
 from datasets import voc
 from model.model import build_unicl_model
-from model.text_encoder.build import build_tokenizer  # Add this import
+from model.text_encoder.build import build_tokenizer
 import cv2
 import numpy as np
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-
-
-
 from utils import MY_CLASSES, get_text_embeddings
 
-
-
 parser = argparse.ArgumentParser()
-parser.add_argument('--cfg', type=str, default='configs/unicl_swin_tiny.yaml', help='config file path')
-parser.add_argument('--unicl_model', type=str, default='checkpoint/yfcc14m.pth', help='unicl model path')
-parser.add_argument("--opts", help="Modify config options by adding 'KEY VALUE' pairs.", default=None, nargs='+',)
+
+parser.add_argument("--opts", help="Modify config options by adding 'KEY VALUE' pairs.", default=None, nargs='+')
+parser.add_argument('--name-list-path', type=str, default=None, help='path to name list file')
 parser.add_argument('--batch-size', type=int, default=4, help="batch size for single GPU")
 parser.add_argument('--dataset', type=str, default='imagenet', help='dataset name')       
-parser.add_argument('--data-path', type=str, help='path to dataset')
-parser.add_argument('--name-list-path', type=str, help='path to name list')
 parser.add_argument('--zip', action='store_true', help='use zipped dataset instead of folder dataset')
 parser.add_argument('--cache-mode', type=str, default='part', choices=['no', 'full', 'part'],
                     help='no: no cache, full: cache all data, part: sharding the dataset into pieces and only cache one piece')
@@ -41,7 +34,15 @@ parser.add_argument('--throughput', action='store_true', help='Test throughput o
 parser.add_argument('--debug', action='store_true', help='Perform debug only')
 parser.add_argument("--local_rank", type=int, default=0, help='local rank for DistributedDataParallel')
 
-torch.manual_seed(0)
+
+
+
+parser.add_argument('--cfg', type=str, default='configs/unicl_swin_tiny.yaml', help='config file path')
+parser.add_argument('--unicl_model', type=str, default='checkpoint/yfcc14m.pth', help='unicl model path')
+parser.add_argument('--data-path', type=str, help='path to dataset')
+parser.add_argument('--name-list', type=str, default=None, help='path to name list file')
+
+# torch.manual_seed(0)
 
 def load_cls_dataset(cfg, args):
     val_dataset = voc.VOC12ClsDataset(
@@ -71,6 +72,87 @@ gradcam_activations = None
 gradcam_gradients = None
 feature_activations = []
 attn_activations = []
+
+def process_image(model, image_path, text_embeddings, logit_scale, cfg, args):
+    image = Image.open(image_path).convert('RGB')
+    
+    # Preprocess the image
+    input_tensor = torchvision.transforms.Compose([
+        torchvision.transforms.Resize((cfg.DATASET.IMG_SIZE[0], cfg.DATASET.IMG_SIZE[1])),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(
+            mean=IMAGENET_DEFAULT_MEAN,
+            std=IMAGENET_DEFAULT_STD
+        )
+    ])(image)
+
+    input_tensor = input_tensor.unsqueeze(0).cuda()
+
+    target_layer = model.image_encoder.layers[-1].blocks[-1]
+    forward_handle = target_layer.register_forward_hook(gradcam_forward_hook)
+    backward_handle = target_layer.register_backward_hook(gradcam_backward_hook)
+    
+    for layer in model.image_encoder.layers:
+        for block in layer.blocks:
+            block.register_forward_hook(feature_forward_hook)
+            block.attn.attn_drop.register_forward_hook(attn_forward_hook)
+    
+    # Forward pass (do not use torch.no_grad here so that gradients can be computed)
+    image_features = model.encode_image(input_tensor, norm=False)
+
+    # image_features_norm = image_features / image_features.norm(dim=1, keepdim=True)
+    # text_embeddings_norm = text_embeddings / text_embeddings.norm(dim=1, keepdim=True)
+    # cosine similarity as logits
+    logit_scale = model.logit_scale.exp()
+    logits_per_image = logit_scale * image_features @ text_embeddings.t()
+    # logits_per_image = logit_scale * image_features_norm @ text_embeddings_norm.t()
+
+    # logits_per_image = logits_per_image.softmax(dim=-1)
+
+    pred = torch.argmax(logits_per_image)
+    score = logits_per_image[0, pred]
+    print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
+    model.zero_grad()
+    score.backward()
+
+    B, L, C = gradcam_activations.shape
+
+    H = W = int(L ** 0.5)  # Assumes a square feature map
+    activations_reshaped = gradcam_activations.view(B, H, W, C).permute(0, 3, 1, 2)
+    gradients_reshaped = gradcam_gradients.view(B, H, W, C).permute(0, 3, 1, 2)
+    weights = gradients_reshaped.mean(dim=(2, 3), keepdim=True)
+    gradcam_map = torch.sum(weights * activations_reshaped, dim=1, keepdim=True)
+    gradcam_map = F.relu(gradcam_map)
+    gradcam_map_min = gradcam_map.min()
+    gradcam_map_max = gradcam_map.max()
+    gradcam_map = (gradcam_map - gradcam_map_min) / (gradcam_map_max - gradcam_map_min + 1e-8)
+    
+    gradcam_map_np = gradcam_map.cpu().detach().numpy()[0, 0].astype(np.float32)
+    heatmap = cv2.resize(gradcam_map_np, (image.width, image.height))
+    heatmap = np.uint8(255 * heatmap)
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    
+    img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
+    
+    if args.output is None:
+        output_dir = 'output'
+    else:
+        output_dir = args.output
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+    image_name = os.path.basename(image_path)
+    
+    # print(output_dir)
+    cv2.imwrite(f'{output_dir}/{image_name}', overlay)
+    print(f'GradCAM result saved to {output_dir}/{image_name}')
+    
+    forward_handle.remove()
+    backward_handle.remove()
+    for layer in model.image_encoder.layers:
+        for block in layer.blocks:
+            block._forward_hooks.clear()
 
 def feature_forward_hook(module, input, output):
     feature_activations.append(output)
@@ -104,117 +186,28 @@ def test_unicl_classification(cfg, args):
     
     # Precompute text embeddings (these are not used for GradCAM, so no gradient needed)
     with torch.no_grad():
-        # text_embeddings = model.get_imnet_embeddings(MY_CLASSES)
         text_embeddings = get_text_embeddings(tokenizer, model, norm=False)
 
     logit_scale = model.logit_scale.exp()
     
     # Switch to evaluation mode (but allow gradients for the image branch)
-    
 
-    image_name = 'bike.jpg'
-    # image_name = 'bike.jpg'
-    # image_name = 'person.png'
-    # image_name = 'aeroplane.jpg'
-    image = Image.open(image_name).convert('RGB')
-    
-    # Preprocess the image
-    input_tensor = torchvision.transforms.Compose([
-        torchvision.transforms.Resize((cfg.DATASET.IMG_SIZE[0], cfg.DATASET.IMG_SIZE[1])),
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(
-            mean=IMAGENET_DEFAULT_MEAN,
-            std=IMAGENET_DEFAULT_STD
-            )
-    ])(image)
 
-    input_tensor = input_tensor.unsqueeze(0).cuda()
-    # cls_label = cls_label.cuda()
+    with open(args.name_list, 'r') as f:
+        image_name_list = f.readlines()
 
-    target_layer = model.image_encoder.layers[-1].blocks[-1]
-    forward_handle = target_layer.register_forward_hook(gradcam_forward_hook)
-    backward_handle = target_layer.register_backward_hook(gradcam_backward_hook)
-    
-    for layer in model.image_encoder.layers:
-        for block in layer.blocks:
-            block.register_forward_hook(feature_forward_hook)
-            block.attn.attn_drop.register_forward_hook(attn_forward_hook)
-    
-    # Forward pass (do not use torch.no_grad here so that gradients can be computed)
-    image_features = model.encode_image(input_tensor, norm=False)
+    image_path_list = [os.path.join(f'{args.data_path}/JPEGImages', name.strip() + '.jpg') for name in image_name_list]
+    class_label_list = [os.path.join(f'{args.data_path}/SegmentationClassAug', name.strip() + '.png') for name in image_name_list]
 
-    image_features_norm = image_features / image_features.norm(dim=1, keepdim=True)
-    text_embeddings_norm = text_embeddings / text_embeddings.norm(dim=1, keepdim=True)
-    # cosine similarity as logits
-    logit_scale = model.logit_scale.exp()
-    logits_per_image = logit_scale * image_features_norm @ text_embeddings_norm.t()
-    # logits_per_image = logit_scale * image_features @ text_embeddings.t()
+    label = np.array(Image.open(class_label_list[
+        0]))
+    
+    label = np.unique(label)
 
-    # shape = [global_batch_size, global_batch_size]
-    logits_per_image = logits_per_image.softmax(dim=-1)
+    print(f'Class label: {label}')
 
-    print(logits_per_image)
-    
-    # print(logits_per_image)
-
-    pred = torch.argmax(logits_per_image)
-    score = logits_per_image[0, 13]
-    print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
-    # score = logits_per_image.sum()
-    model.zero_grad()
-    score.backward()
-    
-    # At this point gradcam_activations and gradcam_gradients are set by our hooks.
-    # We assume gradcam_activations has shape (B, L, C) where L = H * W.
-    B, L, C = gradcam_activations.shape
-
-    # print(gradcam_activations)
-    # print(gradcam_gradients)
-
-    H = W = int(L ** 0.5)  # Assumes a square feature map
-    # Reshape activations and gradients to (B, C, H, W)
-    activations_reshaped = gradcam_activations.view(B, H, W, C).permute(0, 3, 1, 2)
-    gradients_reshaped = gradcam_gradients.view(B, H, W, C).permute(0, 3, 1, 2)
-    # Compute weights: global average pooling on the gradients
-    weights = gradients_reshaped.mean(dim=(2, 3), keepdim=True)  # (B, C, 1, 1)
-    # Compute GradCAM map: weighted combination of the activations
-    gradcam_map = torch.sum(weights * activations_reshaped, dim=1, keepdim=True)  # (B, 1, H, W)
-    gradcam_map = F.relu(gradcam_map)
-    # Normalize the heatmap between 0 and 1
-    gradcam_map_min = gradcam_map.min()
-    gradcam_map_max = gradcam_map.max()
-    gradcam_map = (gradcam_map - gradcam_map_min) / (gradcam_map_max - gradcam_map_min + 1e-8)
-    
-    # Convert GradCAM map to a numpy array
-    gradcam_map_np = gradcam_map.cpu().detach().numpy()[0, 0].astype(np.float32)
-    
-    # Resize the GradCAM heatmap to match the original image dimensions
-    heatmap = cv2.resize(gradcam_map_np, (image.width, image.height))
-    heatmap = np.uint8(255 * heatmap)
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    
-    # Overlay the heatmap on the original image (convert image to BGR for OpenCV)
-    img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
-    
-    # Save the GradCAM overlay
-    cv2.imwrite(f'output/gradcam_{image_name}', overlay)
-
-    # print('Printing Intermediate Features')
-    # for i, act in enumerate(feature_activations):
-    #     print(f'Layer {i}: {act.shape}')
-    
-    # print('Printing Attention Weights')
-    # for i, act in enumerate(attn_activations):
-    #     print(f'Layer {i}: {act.shape}')
-    
-    # Remove the hooks to avoid interference with future iterations
-    forward_handle.remove()
-    backward_handle.remove()
-    for layer in model.image_encoder.layers:
-        for block in layer.blocks:
-            block._forward_hooks.clear()
-
+    for image_path in image_path_list:
+        process_image(model, image_path, text_embeddings, logit_scale, cfg, args)
 
 if __name__ == '__main__':
     args = parser.parse_args()
