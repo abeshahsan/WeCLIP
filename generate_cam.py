@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import argparse
 from PIL import Image
 import torchvision
+import matplotlib.pyplot as plt
 from config import get_config
 from datasets import voc
 from model.model import build_unicl_model
@@ -73,8 +74,12 @@ gradcam_gradients = None
 feature_activations = []
 attn_activations = []
 
-def process_image(model, image_path, text_embeddings, logit_scale, cfg, args):
+def process_image(model, image_path, label_path,  text_embeddings, logit_scale, cfg, args):
     image = Image.open(image_path).convert('RGB')
+    
+    label = np.array(Image.open(label_path), dtype=np.uint8)
+    label = np.unique(label - 1)
+    label_list = label[label < 254].tolist()
     
     # Preprocess the image
     input_tensor = torchvision.transforms.Compose([
@@ -109,44 +114,46 @@ def process_image(model, image_path, text_embeddings, logit_scale, cfg, args):
 
     # logits_per_image = logits_per_image.softmax(dim=-1)
 
-    pred = torch.argmax(logits_per_image)
-    score = logits_per_image[0, pred]
-    print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
-    model.zero_grad()
-    score.backward()
+    for label in label_list:
+        score = logits_per_image[0, label]
+        # print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
+        model.zero_grad()
+        score.backward()
 
-    B, L, C = gradcam_activations.shape
+        B, L, C = gradcam_activations.shape
 
-    H = W = int(L ** 0.5)  # Assumes a square feature map
-    activations_reshaped = gradcam_activations.view(B, H, W, C).permute(0, 3, 1, 2)
-    gradients_reshaped = gradcam_gradients.view(B, H, W, C).permute(0, 3, 1, 2)
-    weights = gradients_reshaped.mean(dim=(2, 3), keepdim=True)
-    gradcam_map = torch.sum(weights * activations_reshaped, dim=1, keepdim=True)
-    gradcam_map = F.relu(gradcam_map)
-    gradcam_map_min = gradcam_map.min()
-    gradcam_map_max = gradcam_map.max()
-    gradcam_map = (gradcam_map - gradcam_map_min) / (gradcam_map_max - gradcam_map_min + 1e-8)
-    
-    gradcam_map_np = gradcam_map.cpu().detach().numpy()[0, 0].astype(np.float32)
-    heatmap = cv2.resize(gradcam_map_np, (image.width, image.height))
-    heatmap = np.uint8(255 * heatmap)
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    
-    img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
-    
-    if args.output is None:
-        output_dir = 'output'
-    else:
-        output_dir = args.output
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        H = W = int(L ** 0.5)  # Assumes a square feature map
+        activations_reshaped = gradcam_activations.view(B, H, W, C).permute(0, 3, 1, 2)
+        gradients_reshaped = gradcam_gradients.view(B, H, W, C).permute(0, 3, 1, 2)
+        weights = gradients_reshaped.mean(dim=(2, 3), keepdim=True)
+        gradcam_map = torch.sum(weights * activations_reshaped, dim=1, keepdim=True)
+        gradcam_map = F.relu(gradcam_map)
+        gradcam_map_min = gradcam_map.min()
+        gradcam_map_max = gradcam_map.max()
+        gradcam_map = (gradcam_map - gradcam_map_min) / (gradcam_map_max - gradcam_map_min + 1e-8)
+        
+        gradcam_map_np = gradcam_map.cpu().detach().numpy()[0, 0].astype(np.float32)
+        heatmap = cv2.resize(gradcam_map_np, (image.width, image.height))
+        heatmap = np.uint8(255 * heatmap)
+        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+        
+        img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
+        
+        if args.output is None:
+            output_dir = 'output'
+        else:
+            output_dir = args.output
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-    image_name = os.path.basename(image_path)
-    
-    # print(output_dir)
-    cv2.imwrite(f'{output_dir}/{image_name}', overlay)
-    print(f'GradCAM result saved to {output_dir}/{image_name}')
+        image_name = os.path.basename(image_path)
+        
+        plt.imshow(overlay)
+        plt.axis('off')
+        plt.title(f'{label}')
+        plt.savefig(f'{output_dir}/{image_name}_{label}.png')
+
     
     forward_handle.remove()
     backward_handle.remove()
@@ -199,15 +206,12 @@ def test_unicl_classification(cfg, args):
     image_path_list = [os.path.join(f'{args.data_path}/JPEGImages', name.strip() + '.jpg') for name in image_name_list]
     class_label_list = [os.path.join(f'{args.data_path}/SegmentationClassAug', name.strip() + '.png') for name in image_name_list]
 
-    label = np.array(Image.open(class_label_list[
-        0]))
-    
-    label = np.unique(label)
 
-    print(f'Class label: {label}')
 
-    for image_path in image_path_list:
-        process_image(model, image_path, text_embeddings, logit_scale, cfg, args)
+    # print(f'Class label for image {class_label_list[idx]}: {label}')
+
+    for image_path, label_path in zip(image_path_list, class_label_list):
+        process_image(model, image_path, label_path, text_embeddings, logit_scale, cfg, args)
 
 if __name__ == '__main__':
     args = parser.parse_args()
