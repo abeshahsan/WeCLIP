@@ -114,6 +114,8 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
 
     # logits_per_image = logits_per_image.softmax(dim=-1)
 
+    label_list = [torch.argmax(logits_per_image, dim=-1).item()]
+
     for label in label_list:
         score = logits_per_image[0, label]
         # print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
@@ -147,17 +149,11 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-        image_name = os.path.basename(image_path)
+        image_name = os.path.basename(image_path).split('.')[0]
         
-        plt.imshow(overlay)
-        plt.axis('off')
-        plt.title(f'{MY_CLASSES[label]}')
-        plt.savefig(f'{output_dir}/{image_name}_{MY_CLASSES[label]}.png')
-        plt.close()
+        cv2.imwrite(os.path.join(output_dir, f'{image_name}_{label}.png'), overlay)
+        print(f'GradCAM for image {image_path} saved to {output_dir}/{image_name}_{label}.png')
 
-        # Free up memory
-        del gradcam_activations
-        del gradcam_gradients
         torch.cuda.empty_cache()
 
     
