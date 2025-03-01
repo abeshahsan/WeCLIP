@@ -104,13 +104,18 @@ def test_unicl_classification(cfg, args):
     
     # Precompute text embeddings (these are not used for GradCAM, so no gradient needed)
     with torch.no_grad():
-        text_embeddings = model.get_imnet_embeddings(MY_CLASSES)
+        # text_embeddings = model.get_imnet_embeddings(MY_CLASSES)
+        text_embeddings = get_text_embeddings(tokenizer, model, norm=False)
+
     logit_scale = model.logit_scale.exp()
     
     # Switch to evaluation mode (but allow gradients for the image branch)
     
 
     image_name = 'bike.jpg'
+    # image_name = 'bike.jpg'
+    # image_name = 'person.png'
+    # image_name = 'aeroplane.jpg'
     image = Image.open(image_name).convert('RGB')
     
     # Preprocess the image
@@ -138,15 +143,15 @@ def test_unicl_classification(cfg, args):
     # Forward pass (do not use torch.no_grad here so that gradients can be computed)
     image_features = model.encode_image(input_tensor, norm=False)
 
-    # image_features_norm = image_features / image_features.norm(dim=1, keepdim=True)
-    # text_embeddings_norm = text_embeddings / text_embeddings.norm(dim=1, keepdim=True)
+    image_features_norm = image_features / image_features.norm(dim=1, keepdim=True)
+    text_embeddings_norm = text_embeddings / text_embeddings.norm(dim=1, keepdim=True)
     # cosine similarity as logits
     logit_scale = model.logit_scale.exp()
+    logits_per_image = logit_scale * image_features_norm @ text_embeddings_norm.t()
     # logits_per_image = logit_scale * image_features @ text_embeddings.t()
-    logits_per_image = logit_scale * image_features @ text_embeddings.t()
 
     # shape = [global_batch_size, global_batch_size]
-    # logits_per_image = logits_per_image.softmax(dim=-1)
+    logits_per_image = logits_per_image.softmax(dim=-1)
 
     print(logits_per_image)
     

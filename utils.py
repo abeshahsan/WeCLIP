@@ -103,29 +103,31 @@ def reduce_tensor(tensor):
 class_map = {
     0: 'aeroplane',
     1: 'bicycle',
-    2: 'bird',
+    2: 'bird avian',
     3: 'boat',
     4: 'bottle',
     5: 'bus',
     6: 'car',
     7: 'cat',
-    8: 'chair',
+    8: 'chair seat',
     9: 'cow',
     10: 'diningtable',
     11: 'dog',
     12: 'horse',
     13: 'motorbike',
-    14: 'person',
+    14: 'person with clothes,people,human',
     15: 'pottedplant',
     16: 'sheep',
     17: 'sofa',
     18: 'train',
-    19: 'tvmonitor'
+    19: 'tvmonitor screen'
 }
 
 MY_CLASSES = [
-    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 
-    'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
+    'aeroplane', 'bicycle', 'bird avian', 'boat', 'bottle',
+    'bus', 'car', 'cat', 'chair seat', 'cow',
+    'diningtable', 'dog', 'horse', 'motorbike', 'person with clothes,people,human',
+    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor screen',
 ]
 
 TEMPLATES = [
