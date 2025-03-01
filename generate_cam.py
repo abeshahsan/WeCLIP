@@ -118,7 +118,7 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
         score = logits_per_image[0, label]
         # print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
         model.zero_grad()
-        score.backward()
+        score.backward(retain_graph=True)
 
         B, L, C = gradcam_activations.shape
 
@@ -151,8 +151,14 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
         
         plt.imshow(overlay)
         plt.axis('off')
-        plt.title(f'{label}')
-        plt.savefig(f'{output_dir}/{image_name}_{label}.png')
+        plt.title(f'{MY_CLASSES[label]}')
+        plt.savefig(f'{output_dir}/{image_name}_{MY_CLASSES[label]}.png')
+        plt.close()
+
+        # Free up memory
+        del gradcam_activations
+        del gradcam_gradients
+        torch.cuda.empty_cache()
 
     
     forward_handle.remove()
