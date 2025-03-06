@@ -14,7 +14,7 @@ from WeCLIP_model.PAR import PAR
 from UniCL.model.model import UniCLModel
 from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
-from UniCL.model.model import interpolate
+from UniCL.model.model import interpolate_and_project
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
