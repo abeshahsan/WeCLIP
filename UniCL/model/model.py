@@ -191,7 +191,7 @@ class UniCLModel(nn.Module):
         #project last layer fts from 1024 to 512
         self.original_last_fts = self.original_last_fts @ self.image_projection
         if norm:
-            self.get_original_last_fts = self.original_last_fts/self.original_last_fts.norm(dim = -1, keepdim = True)
+            self.original_last_fts = self.original_last_fts/self.original_last_fts.norm(dim = -1, keepdim = True)
 
 
         # for i, fts in enumerate(x):

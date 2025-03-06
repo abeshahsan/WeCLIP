@@ -43,4 +43,4 @@ clip_init:
   in_channels: [768, 768,768,768]
 
 unicl_init:
-  unicl_pretrain_path: /content/WeCLIP/yfcc14m.pth
+  unicl_pretrain_path: /content/WeCLIP/in21k_yfcc14m_swin_base.pth
