@@ -156,6 +156,10 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
 
         torch.cuda.empty_cache()
 
+    for block_idx, feature_activation in enumerate(feature_activations):
+        print(f'Block {block_idx} feature activation shape: {feature_activation.shape}')
+    for block_idx, attn_activation in enumerate(attn_activations):
+        print(f'Block {block_idx} attention activation shape: {attn_activation.shape}')
     
     forward_handle.remove()
     backward_handle.remove()
