@@ -71,7 +71,7 @@ image_name = 'person.png'
 # image_name = 'cat.jpg'
 # image_name = 'aeroplane.jpg'
 # image_name = 'bike.jpg'
-image_name = 'emma-sunglass.jpg'
+image_name = 'cat.jpg'
 
 image = Image.open(image_name).convert('RGB')
 
@@ -81,7 +81,7 @@ image_features, attn_list = model.encode_image(input_tensor, input_tensor.shape[
 
 final_image_features = model.forward_last_layer(image_features, torch.cat([fg_text_features], dim=0))[0]
 
-score = final_image_features[0, 14]
+score = final_image_features[0, torch.argmax(final_image_features, dim=-1).item()]
 
 # score = logits_per_image.sum()
 model.zero_grad()
