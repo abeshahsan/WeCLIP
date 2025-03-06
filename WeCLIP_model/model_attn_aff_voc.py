@@ -14,7 +14,7 @@ from WeCLIP_model.PAR import PAR
 from UniCL.model.model import UniCLModel
 from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
-from UniCL.model.model import interpolate_and_project
+from UniCL.model.model import interpolate
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
@@ -28,7 +28,7 @@ def Normalize_clip():
 
 def reshape_transform(tensor, height=28, width=28):
     
-    tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
+    tensor = interpolate(tensor, (height, width), tensor.size(2))
 
     # tensor = tensor.permute(1, 0, 2)
     result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
@@ -104,7 +104,7 @@ class WeCLIP(nn.Module):
         for name, param in self.encoder.named_parameters():
             if "image_encoder.layers.3.blocks.1" not in name:
                 param.requires_grad = False
-            # print(f"{name}: requires_grad = {param.requires_grad}")
+            print(f"{name}: requires_grad = {param.requires_grad}")
 
         # for name, param in self.encoder.named_parameters():
         #     if "11" not in name:

@@ -238,46 +238,46 @@ def update_config(config, args):
     _update_config_from_file(config, args.unicl_config)
 
     config.defrost()
-    if args.opts:
-        config.merge_from_list(args.opts)
+    # if args.opts:
+    #     config.merge_from_list(args.opts)
 
-    # merge from specific arguments
-    if args.batch_size:
-        config.DATA.BATCH_SIZE = args.batch_size
-    if args.dataset:
-        config.DATA.DATASET = args.dataset            
-    if args.data_path:
-        config.DATA.DATA_PATH = args.data_path
-    if args.zip:
-        config.DATA.ZIP_MODE = True
-    if args.cache_mode:
-        config.DATA.CACHE_MODE = args.cache_mode
-    if args.resume:
-        config.MODEL.RESUME = args.resume
-    if args.accumulation_steps:
-        config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
-    if args.use_checkpoint:
-        config.TRAIN.USE_CHECKPOINT = True
-    if args.amp_opt_level:
-        config.AMP_OPT_LEVEL = args.amp_opt_level
-    if args.output:
-        config.OUTPUT = args.output
-    if args.tag:
-        config.TAG = args.tag
-    if args.eval:
-        config.EVAL_MODE = True
-    if args.throughput:
-        config.THROUGHPUT_MODE = True
-    if args.debug:
-        config.DEBUG_MODE = True
-    if args.backbone_verbose:
-        config.BACKBONE.VERBOSE = True
+    # # merge from specific arguments
+    # if args.batch_size:
+    #     config.DATA.BATCH_SIZE = args.batch_size
+    # if args.dataset:
+    #     config.DATA.DATASET = args.dataset            
+    # if args.data_path:
+    #     config.DATA.DATA_PATH = args.data_path
+    # if args.zip:
+    #     config.DATA.ZIP_MODE = True
+    # if args.cache_mode:
+    #     config.DATA.CACHE_MODE = args.cache_mode
+    # if args.resume:
+    #     config.MODEL.RESUME = args.resume
+    # if args.accumulation_steps:
+    #     config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
+    # if args.use_checkpoint:
+    #     config.TRAIN.USE_CHECKPOINT = True
+    # if args.amp_opt_level:
+    #     config.AMP_OPT_LEVEL = args.amp_opt_level
+    # if args.output:
+    #     config.OUTPUT = args.output
+    # if args.tag:
+    #     config.TAG = args.tag
+    # if args.eval:
+    #     config.EVAL_MODE = True
+    # if args.throughput:
+    #     config.THROUGHPUT_MODE = True
+    # if args.debug:
+    #     config.DEBUG_MODE = True
+    # if args.backbone_verbose:
+    #     config.BACKBONE.VERBOSE = True
 
-    if config.DATA.DATASET == 'imagewoof':
-        config.MODEL.NUM_CLASSES = 10
+    # if config.DATA.DATASET == 'imagewoof':
+    #     config.MODEL.NUM_CLASSES = 10
 
     # set local rank for distributed training
-    config.LOCAL_RANK = args.local_rank
+    # config.LOCAL_RANK = args.local_rank
 
     # output folder
     config.OUTPUT = os.path.join(config.OUTPUT, config.MODEL.NAME, config.TAG)

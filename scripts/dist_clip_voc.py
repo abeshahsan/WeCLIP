@@ -260,9 +260,10 @@ def train(cfg):
 
     avg_meter = AverageMeter()
 
+    loop = tqdm(range(start_iter, cfg.train.max_iters), ncols=100, ascii=" >=")
 
-    for n_iter in range(start_iter, cfg.train.max_iters):
-        
+    for n_iter in loop:
+        WeCLIP_model.train()
         try:
             img_name, inputs, cls_labels, img_box = next(train_loader_iter)
         except:
