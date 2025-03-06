@@ -259,7 +259,7 @@ def build_unicl_model(config, **kwargs):
 
     return model
 
-def interpolate(x, target_hw, target_channels):
+def interpolate_and_project(x, target_hw, target_channels):
     """
     Resizes and optionally projects the tensor to match the target size and channels.
     x: Input tensor of shape (b, hw, c)
