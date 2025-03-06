@@ -407,9 +407,8 @@ class BasicLayer(nn.Module):
                     x_all.append(x)
                     attn_all.append(attn)
                     
-        for i in range(len(x_all)):
-            if self.downsample is not None:
-                 x_all[i] = self.downsample(x_all[i])
+        if self.downsample is not None:
+              x_all[-1] = self.downsample(x_all[-1])
 
         if require_all_fts:
             return x_all, attn_all
