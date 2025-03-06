@@ -152,7 +152,7 @@ class UniCLModel(nn.Module):
                     if verbose:
                         logger.info(f'=> init {k} from {pretrained}')
 
-                need_init_state_dict[k] = v
+            need_init_state_dict[k] = v
         self.image_encoder.load_state_dict(image_encoder_state_dict, strict=False)
         self.load_state_dict(need_init_state_dict, strict=False)
 
@@ -260,7 +260,7 @@ def build_unicl_model(config, **kwargs):
 
     return model
 
-def interpolate_and_project(x, target_hw, target_channels):
+def interpolate(x, target_hw, target_channels):
     """
     Resizes and optionally projects the tensor to match the target size and channels.
     x: Input tensor of shape (b, hw, c)
