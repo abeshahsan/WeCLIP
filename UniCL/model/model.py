@@ -196,7 +196,7 @@ class UniCLModel(nn.Module):
 
         # for i, fts in enumerate(x):
         #     projected_fts_all.append(interpolate(fts, (14, 14)))
-        projected_attn_weight_list.append(interpolate(attn[i], (14, 14), 196))
+        # projected_attn_weight_list.append(interpolate_and_project(attn[i], (14, 14), 196))
         
         # del x, attn
         fts_taken = []
@@ -208,6 +208,7 @@ class UniCLModel(nn.Module):
             #     x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
                 # projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
             fts_taken.append(x[i])
+            attn[i] = interpolate_and_project(attn[i], (14, 14), 196)
             attn_taken.append(attn[i])
 
 
@@ -245,7 +246,7 @@ class UniCLModel(nn.Module):
         image_features = image_features.permute(1, 0, 2)
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
-        attn_weight = interpolate(attn_weight, (14, 14), 196)
+        attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
 
         return logits_per_image, attn_weight
 
