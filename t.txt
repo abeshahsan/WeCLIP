@@ -572,3 +572,7 @@ torch.Size([4, 196, 384])               torch.Size([4, 401, 401])
 torch.Size([4, 196, 384])               torch.Size([4, 401, 401])
 torch.Size([4, 49, 768])                torch.Size([4, 401, 401])
 
+
+
+
+python -W ignore scripts/dist_clip_voc.py --config configs/voc_attn_reg.yaml --unicl-config UniCL/configs/unicl_swin_base.yaml --unicl_pretrain_path checkpoint/in21k_yfcc14m_swin_base.pth

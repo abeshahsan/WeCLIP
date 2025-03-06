@@ -35,7 +35,7 @@ parser.add_argument("--radius", default=8, type=int, help="radius")
 parser.add_argument("--crop_size", default=224, type=int, help="crop_size")
 parser.add_argument("--unicl_pretrain_path", default=None, type=str, help="unicl_pretrain_path")
 parser.add_argument("--backbone-verbose", action="store_true", help="backbone-verbose")
-parser.add_argument("--unicl_config",
+parser.add_argument("--unicl-config",
                     default='/your/path/WeCLIP/UniCL/configs/unicl_swin_base.yaml',
                     type=str,
                     help="config")
@@ -195,7 +195,8 @@ def train(cfg):
         embedding_dim=cfg.clip_init.embedding_dim,
         in_channels=cfg.clip_init.in_channels,
         dataset_root_path=cfg.dataset.root_dir,
-        device='cuda'
+        device='cuda',
+        args=args
     )
 
 
