@@ -51,21 +51,58 @@ class UniCLModel(nn.Module):
         trunc_normal_(self.image_projection, std=.02)
 
         """
-            torch.Size([4, 784, 192]) torch.Size([4, 3136, 96])
-            torch.Size([4, 784, 192]) torch.Size([4, 3136, 96])
-            torch.Size([4, 196, 384]) torch.Size([4, 784, 192])
-            torch.Size([4, 196, 384]) torch.Size([4, 784, 192])
-            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-            torch.Size([4, 49, 768]) torch.Size([4, 196, 384])
-            torch.Size([4, 49, 768]) torch.Size([4, 49, 768])
+            Block 0 feature activation shape: torch.Size([1, 3136, 128])
+            Block 1 feature activation shape: torch.Size([1, 3136, 128])
+            Block 2 feature activation shape: torch.Size([1, 784, 256])
+            Block 3 feature activation shape: torch.Size([1, 784, 256])
+
+            Block 4 feature activation shape: torch.Size([1, 196, 512])<--
+            Block 5 feature activation shape: torch.Size([1, 196, 512])
+            Block 6 feature activation shape: torch.Size([1, 196, 512])
+            Block 7 feature activation shape: torch.Size([1, 196, 512])
+            Block 8 feature activation shape: torch.Size([1, 196, 512])
+            Block 9 feature activation shape: torch.Size([1, 196, 512])
+            Block 10 feature activation shape: torch.Size([1, 196, 512])
+            Block 11 feature activation shape: torch.Size([1, 196, 512])
+            Block 12 feature activation shape: torch.Size([1, 196, 512])
+            Block 13 feature activation shape: torch.Size([1, 196, 512])
+            Block 14 feature activation shape: torch.Size([1, 196, 512])
+            Block 15 feature activation shape: torch.Size([1, 196, 512])<--
+            Block 16 feature activation shape: torch.Size([1, 196, 512])
+            Block 17 feature activation shape: torch.Size([1, 196, 512])
+            Block 18 feature activation shape: torch.Size([1, 196, 512])
+            Block 19 feature activation shape: torch.Size([1, 196, 512])
+            Block 20 feature activation shape: torch.Size([1, 196, 512])
+            Block 21 feature activation shape: torch.Size([1, 196, 512])
+
+            Block 22 feature activation shape: torch.Size([1, 49, 1024])
+            Block 23 feature activation shape: torch.Size([1, 49, 1024])
+
+            Attention activation shape: torch.Size([64, 4, 49, 49])
+            Attention activation shape: torch.Size([64, 4, 49, 49])
+            Attention activation shape: torch.Size([16, 8, 49, 49])
+            Attention activation shape: torch.Size([16, 8, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([1, 32, 49, 49])
+            Attention activation shape: torch.Size([1, 32, 49, 49])
         """
-        
-        self.target_hw = (14, 14) 
-        self.target_channels = 768
         
 
 
@@ -143,26 +180,39 @@ class UniCLModel(nn.Module):
         b = image.shape[0]
         x, attn = self.image_encoder.forward_features(image, image.shape[0], image.shape[1], require_all_fts=True)
 
+        #same shape : block 4 to 21, we take 4 to 14
+
         projected_fts_all = []
         projected_attn_weight_list = []
-
+     
         self.original_last_fts = x[-1].clone()
         self.original_last_attn_weight = attn[-1].clone()
-
-        for i, fts in enumerate(x):
-            projected_fts_all.append(interpolate_and_project(fts, (14, 14), 768))
-            projected_attn_weight_list.append(interpolate_and_project(attn[i], (14, 14), 196))
         
-        del x, attn
+        #project last layer fts from 1024 to 512
+        self.original_last_fts = self.original_last_fts @ self.image_projection
+        if norm:
+            self.get_original_last_fts = self.original_last_fts/self.original_last_fts.norm(dim = -1, keepdim = True)
 
-        for i in range(len(projected_fts_all)):
+
+        # for i, fts in enumerate(x):
+        #     projected_fts_all.append(interpolate(fts, (14, 14)))
+        projected_attn_weight_list.append(interpolate(attn[i], (14, 14), 196))
+        
+        # del x, attn
+        fts_taken = []
+        attn_taken = []
+
+        for i in range(4, 14):
             # x[i] = x[i] @ self.image_projection
-            if norm:
-                # x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
-                projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
+            # if norm:
+            #     x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
+                # projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
+            fts_taken.append(x[i])
+            attn_taken.append(attn[i])
 
 
-        return projected_fts_all, projected_attn_weight_list
+
+        return fts_taken, attn_taken
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)
@@ -173,8 +223,7 @@ class UniCLModel(nn.Module):
         else:
             x = x[:, 0]
 
-        # x = x @ self.text_projection
-        x = project_text(768, x)
+        x = x @ self.text_projection
 
         if norm:
             x = x / x.norm(dim=-1, keepdim=True)
@@ -194,10 +243,9 @@ class UniCLModel(nn.Module):
 
     def forward_last_layer(self, image_features, text_features):
         image_features = image_features.permute(1, 0, 2)
-        # image_features = interpolate_and_project(image_features, (7, 7), 768)
         logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
 
-        attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
+        attn_weight = interpolate(attn_weight, (14, 14), 196)
 
         return logits_per_image, attn_weight
 
@@ -211,12 +259,7 @@ def build_unicl_model(config, **kwargs):
 
     return model
 
-def project_text(target_channels, x):
-    projection_layer = nn.Linear(x.size(-1), target_channels).cuda()
-    x = projection_layer(x)
-    return x
-
-def interpolate_and_project(x, target_hw, target_channels):
+def interpolate(x, target_hw, target_channels):
     """
     Resizes and optionally projects the tensor to match the target size and channels.
     x: Input tensor of shape (b, hw, c)

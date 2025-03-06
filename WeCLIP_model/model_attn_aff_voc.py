@@ -88,7 +88,7 @@ class WeCLIP(nn.Module):
 
         """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
 
-        unicl_config = get_config()
+        unicl_config = get_config(args)
         unicl_config['MODEL']['PRETRAINED'] = unicl_model
         self.encoder = build_unicl_model(unicl_config)
         self.encoder = self.encoder.to(device)
@@ -162,7 +162,7 @@ class WeCLIP(nn.Module):
         # img = F.interpolate(img, size=(224, 224), mode='bilinear', align_corners=False)
 
         # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
-        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder, )
+        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder)
 
         # for x in fts_all:
         #     print(x.shape)
@@ -170,7 +170,7 @@ class WeCLIP(nn.Module):
         # for attn in attn_weight_list:
         #     print(attn.shape)
 
-        fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
+        fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)(11, 196, 4, 512)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
         if self.require_all_fts==True:
             cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)

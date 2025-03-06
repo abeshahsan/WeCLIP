@@ -235,7 +235,7 @@ def _update_config_from_file(config, cfg_file):
 
 
 def update_config(config, args):
-    _update_config_from_file(config, args.cfg)
+    _update_config_from_file(config, args.unicl_config)
 
     config.defrost()
     if args.opts:
@@ -285,11 +285,11 @@ def update_config(config, args):
     config.freeze()
 
 
-def get_config():
+def get_config(args):
     """Get a yacs CfgNode object with default values."""
     # Return a clone so that the defaults will not be altered
     # This is for the "local variable" use pattern
     config = _C.clone()
-    # update_config(config, args)
+    update_config(config, args)
 
     return config
