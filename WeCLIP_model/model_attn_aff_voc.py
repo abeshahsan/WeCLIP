@@ -16,9 +16,10 @@ from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
 from UniCL.model.model import interpolate_and_project
 
+from UniCL.hooks_and_stuff import gradcam_forward_hook, gradcam_backward_hook, feature_forward_hook, attn_forward_hook, freeze_model, add_intermideate_fts_hook, remove_intermideate_fts_hook, add_gradcam_hook, remove_gradcam_hook, feature_activations, attn_activations, gradcam_activations, gradcam_gradients
+
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
-from torchsummary import summary 
 
 
 def Normalize_clip():
@@ -77,6 +78,11 @@ def _refine_cams(ref_mod, images, cams, valid_key):
 
     return refined_label.squeeze(0)
 
+# for name, param in self.encoder.named_parameters():
+#     if "image_encoder.layers.3.blocks.1" not in name:
+#         param.requires_grad = False
+
+
 
 class WeCLIP(nn.Module):
     def __init__(self, args = None, num_classes=None, clip_model=None, unicl_model = None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
@@ -94,24 +100,10 @@ class WeCLIP(nn.Module):
         self.encoder = self.encoder.to(device)
         self.encoder.eval()
 
-       
-        
-        # summary(self.encoder.image_encoder, (3, 224, 224))
-
-        # for param in self.encoder.parameters():
-        #     param.requires_grad = False
+        freeze_model(self.encoder, ['image_encoder.layers.3.blocks.1'])
 
         for name, param in self.encoder.named_parameters():
-            if "image_encoder.layers.3.blocks.1" not in name:
-                param.requires_grad = False
-            # print(f"{name}: requires_grad = {param.requires_grad}")
-
-        # for name, param in self.encoder.named_parameters():
-        #     if "11" not in name:
-        #         param.requires_grad=False
-
-        # for name, param in self.encoder.named_parameters():
-        #     print(name, param.requires_grad)
+            print(name, param.requires_grad)
 
         self.in_channels = in_channels
 
@@ -122,14 +114,7 @@ class WeCLIP(nn.Module):
         self.bg_text_features = zeroshot_classifier(BACKGROUND_CATEGORY, ['a clean origami {}.'], self.encoder)
         self.fg_text_features = zeroshot_classifier(new_class_names, ['a clean origami {}.'], self.encoder)
 
-        """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
 
-
-        # self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
-        self.target_layers = [self.encoder.image_encoder.layers[-1].blocks[-1].norm2]
-
-
-        self.grad_cam = GradCAM(model=self.encoder, target_layers=self.target_layers, reshape_transform=reshape_transform)
         self.root_path = os.path.join(dataset_root_path, 'SegmentationClassAug')
         self.cam_bg_thres = 1
         self.encoder.eval()
@@ -157,18 +142,17 @@ class WeCLIP(nn.Module):
         self.encoder.eval()
         self.iter_num += 1
 
-        #resize image to 224x224
+        add_intermideate_fts_hook(self.encoder)
+        self.encoder.encode_image(img)
+        remove_intermideate_fts_hook(self.encoder)
 
-        # img = F.interpolate(img, size=(224, 224), mode='bilinear', align_corners=False)
+        fts_all = feature_activations[-1]
+        attn_weight_list = attn_activations[-1]
 
-        # fts_all, attn_weight_list = generate_clip_fts(img, self.encoder, require_all_fts=True)
-        fts_all, attn_weight_list = generate_unicl_features(img, self.encoder, )
-
-        # for x in fts_all:
-        #     print(x.shape)
-        # print()
-        # for attn in attn_weight_list:
-        #     print(attn.shape)
+        self.grad_cam = GradCAM(model=self.encoder,
+                                target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
+                                use_cuda=True,
+                                reshape_transform=reshape_transform)
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)

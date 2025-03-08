@@ -1,0 +1,1 @@
+python -W ignore /content/WeCLIP/scripts/dist_clip_voc.py --config /content/WeCLIP/configs/voc_attn_reg.yaml
