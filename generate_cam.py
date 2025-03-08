@@ -94,7 +94,8 @@ def process_image(model:UniCLModel, image_path, label_path,  text_embeddings, lo
     forward_handle = target_layer.register_forward_hook(gradcam_forward_hook)
     backward_handle = target_layer.register_backward_hook(gradcam_backward_hook)
 
-    logits_per_image = model.forward_last_layer(feature_activations[-2], text_embeddings)
+    feature_activation = feature_activations.pop()
+    logits_per_image = model.forward_last_layer(feature_activations[-1], text_embeddings)
 
     # logits_per_image = logits_per_image.softmax(dim=-1)
     torch.set_printoptions(profile="full")
