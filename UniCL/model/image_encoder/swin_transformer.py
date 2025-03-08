@@ -275,8 +275,7 @@ class SwinTransformerBlock(nn.Module):
         grid_size = int((attn_weight.shape[0]//B) ** 0.5)
         attn_weight = attn_weight.view(B, grid_size, grid_size, self.window_size*self.window_size, self.window_size*self.window_size)
 
-        attn_weight = attn_weight.permute(0, 1, 3, 2, 4).contiguous()
-        attn_weight = attn_weight.view(B, grid_size * 7, grid_size * 7)
+        attn_weight = torch.cat(torch.cat(attn_weight, dim=3), dim=1)
 
         return x, attn_weight
 
