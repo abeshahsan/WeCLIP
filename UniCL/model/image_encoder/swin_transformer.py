@@ -273,7 +273,10 @@ class SwinTransformerBlock(nn.Module):
 
         attn_weight = attn_weight.mean(dim = 1)# for heads
         grid_size = int((attn_weight.shape[0]//B) ** 0.5)
-        attn_weight = attn_weight.view(grid_size, grid_size, self.window_size*self.window_size, self.window_size*self.window_size)
+        attn_weight = attn_weight.view(B, grid_size, grid_size, self.window_size*self.window_size, self.window_size*self.window_size)
+
+        attn_weight = attn_weight.permute(0, 1, 3, 2, 4).contiguous()
+        attn_weight = attn_weight.view(B, grid_size * 7, grid_size * 7)
 
         return x, attn_weight
 
