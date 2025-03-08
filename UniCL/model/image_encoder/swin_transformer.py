@@ -143,7 +143,7 @@ class WindowAttention(nn.Module):
         x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
-        return x
+        return x, attn
 
     def extra_repr(self) -> str:
         return f'dim={self.dim}, window_size={self.window_size}, num_heads={self.num_heads}'
@@ -252,7 +252,7 @@ class SwinTransformerBlock(nn.Module):
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
 
         # W-MSA/SW-MSA
-        attn_windows = self.attn(x_windows, mask=self.attn_mask)  # nW*B, window_size*window_size, C
+        attn_windows, attn_weight = self.attn(x_windows, mask=self.attn_mask)  # nW*B, window_size*window_size, C
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
@@ -265,15 +265,17 @@ class SwinTransformerBlock(nn.Module):
             x = shifted_x
         x = x.view(B, H * W, C)
 
-        attention = x.clone()
-
         # FFN
         x = shortcut + self.drop_path(x)
         x = self.norm2(x)
         x = self.mlp(x)
         x = x + self.drop_path(x)
 
-        return x, attention
+        attn_weight = attn_weight.mean(dim = 1)# for heads
+        grid_size = int((attn_weight.shape[0]//B) ** 0.5)
+        attn_weight = attn_weight.view(grid_size, grid_size, self.window_size*self.window_size, self.window_size*self.window_size)
+
+        return x, attn_weight
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
