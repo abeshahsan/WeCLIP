@@ -9,8 +9,6 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-import numpy as np
-import torch.nn.functional as F
 
 
 class Mlp(nn.Module):
@@ -265,15 +263,11 @@ class SwinTransformerBlock(nn.Module):
             x = shifted_x
         x = x.view(B, H * W, C)
 
-        attention = x.clone()
-
         # FFN
         x = shortcut + self.drop_path(x)
-        x = self.norm2(x)
-        x = self.mlp(x)
-        x = x + self.drop_path(x)
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
 
-        return x, attention
+        return x
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
@@ -391,29 +385,14 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x, require_all_fts=False, isLastLayer=False):
-        x_all = []
-        attn_all = []
-        
-        for blk in self.blocks[:len(self.blocks) - 1 if isLastLayer else len(self.blocks)]:
+    def forward(self, x):
+        for blk in self.blocks:
             if self.use_checkpoint:
-                x, attn = checkpoint.checkpoint(blk, x)
-                if require_all_fts:
-                    x_all.append(x)
-                    attn_all.append(attn)
+                x = checkpoint.checkpoint(blk, x)
             else:
-                x, attn = blk(x)
-                if require_all_fts:
-                    x_all.append(x)
-                    attn_all.append(attn)
-                    
-        for i in range(len(x_all)):
-            if self.downsample is not None:
-                 x_all[i] = self.downsample(x_all[i])
-
-        if require_all_fts:
-            return x_all, attn_all
-        
+                x = blk(x)
+        if self.downsample is not None:
+            x = self.downsample(x)
         return x
 
     def extra_repr(self) -> str:
@@ -560,8 +539,6 @@ class SwinTransformer(nn.Module):
         self.dim_out = self.num_features
         
         self.apply(self._init_weights)
-        #newly added
-        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -580,40 +557,23 @@ class SwinTransformer(nn.Module):
     def no_weight_decay_keywords(self):
         return {'relative_position_bias_table'}
 
-    def forward_features(self, x, H, W, require_all_fts=False):
-        x_all = []
-        attn_all = []
-        with torch.no_grad():
-            x = self.patch_embed(x)
-            if self.ape:
-                x = x + self.absolute_pos_embed
-            x = self.pos_drop(x)
+    def forward_features(self, x):
+        x = self.patch_embed(x)
+        if self.ape:
+            x = x + self.absolute_pos_embed
+        x = self.pos_drop(x)
 
-            for idx, layer in enumerate(self.layers):
-                if isinstance(x, list):
-                    x, attn = layer(x[-1], require_all_fts, idx == len(self.layers) - 1)
-                else:
-                    x, attn = layer(x, require_all_fts, idx == len(self.layers) - 1)
-                if require_all_fts:
-                    x_all += x
-                    attn_all += attn
+        for layer in self.layers:
+            x = layer(x)
 
-            if isinstance(x, list):
-                x = x[-1]
-            
-            if require_all_fts:
-                return x_all, attn_all
-
-            x = self.norm(x)  # B L C
-            x = self.avgpool(x.transpose(1, 2))  # B C 1
-            x = torch.flatten(x, 1)
-            
-            return x
+        x = self.norm(x)  # B L C
+        x = self.avgpool(x.transpose(1, 2))  # B C 1
+        x = torch.flatten(x, 1)
+        return x
 
     def forward(self, x):
-        with torch.no_grad():
-            x = self.forward_features(x)
-            x = self.head(x)
+        x = self.forward_features(x)
+        x = self.head(x)
         return x
 
     def flops(self):
@@ -624,34 +584,3 @@ class SwinTransformer(nn.Module):
         flops += self.num_features * self.patches_resolution[0] * self.patches_resolution[1] // (2 ** self.num_layers)
         flops += self.num_features * self.num_classes
         return flops
-
-
-
-    def forward_last_layer(self, image_features, text_features):
-
-        # image_features = image_features.permute(1, 0, 2)  # 196 1 768 -> 1 196 768
-
-        x, attn_weight = self.layers[-1].blocks[-1](image_features)
-
-        # x = x.permute(1, 0, 2)  # LND -> NLD
-
-        # # x = self.visual.ln_post(x)
-        x = self.norm(x)
-        x = torch.mean(x[:, :, :], dim=1)
-
-        # # if self.visual.proj is not None:
-        # #     x = x @ self.visual.proj
-
-        image_features = x
-
-        # normalized features
-        image_features = image_features / image_features.norm(dim=1, keepdim=True)
-        text_features = text_features / text_features.norm(dim=1, keepdim=True)
-        # cosine similarity as logits
-        logit_scale = self.logit_scale.exp()
-        logits_per_image = logit_scale * image_features @ text_features.t()
-
-        # shape = [global_batch_size, global_batch_size]
-        logits_per_image = logits_per_image.softmax(dim=-1)
-
-        return logits_per_image, attn_weight
