@@ -655,5 +655,6 @@ class SwinTransformer(nn.Module):
 
         # # shape = [global_batch_size, global_batch_size]
         # logits_per_image = logits_per_image.softmax(dim=-1)
+        x = self.norm(x)
 
         return x, attn_weight

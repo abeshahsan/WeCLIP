@@ -245,11 +245,11 @@ class UniCLModel(nn.Module):
     def forward_last_layer(self, image_features, text_features):
         image_features = image_features.permute(1, 0, 2)
         x, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
-        
+
         x = x @ self.image_projection
         # if norm:
         #     x[-1] = x[-1]/x[-1].norm(dim = -1, keepdim = True)
-        x = self.norm(x)
+        
         x = torch.mean(x[:, :, :], dim=1)
 
         # # if self.visual.proj is not None:
