@@ -16,7 +16,7 @@ from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
 # from UniCL.model.model import interpolate_and_project
 
-from UniCL.hooks_and_stuff import gradcam_forward_hook, gradcam_backward_hook, feature_forward_hook, attn_forward_hook, freeze_model, add_intermideate_fts_hook, remove_intermideate_fts_hook, add_gradcam_hook, remove_gradcam_hook, feature_activations, attn_activations, gradcam_activations, gradcam_gradients
+from UniCL.hooks_and_stuff import *
 
 from transformers import CLIPTokenizer
 from transformers import AutoTokenizer
@@ -78,11 +78,6 @@ def _refine_cams(ref_mod, images, cams, valid_key):
 
     return refined_label.squeeze(0)
 
-# for name, param in self.encoder.named_parameters():
-#     if "image_encoder.layers.3.blocks.1" not in name:
-#         param.requires_grad = False
-
-
 
 class WeCLIP(nn.Module):
     def __init__(self, args = None, num_classes=None, clip_model=None, unicl_model = None, unicl_config = None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
@@ -140,8 +135,8 @@ class WeCLIP(nn.Module):
         self.encoder.encode_image(img)
         remove_intermideate_fts_hook(self.encoder)
 
-        fts_all = feature_activations[-1]
-        attn_weight_list = attn_activations[-1]
+        fts_all = feature_activations[:-1]
+        attn_weight_list = attn_activations[:-1]
 
         self.grad_cam = GradCAM(model=self.encoder,
                                 target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
@@ -179,7 +174,7 @@ class WeCLIP(nn.Module):
             img_i = img[i]
             cam_fts = cam_fts_all[i]
             cam_attn = attn_weight_stack[i]
-            seg_attn = attn_pred.unsqueeze(0)[:, i, :, :]
+            seg_attn = attn_pred[i].unsqueeze(0)
             
             if self.iter_num > 15000 or mode=='val': #15000
                 require_seg_trans = True
