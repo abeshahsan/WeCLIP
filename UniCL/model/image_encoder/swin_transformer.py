@@ -635,6 +635,9 @@ class SwinTransformer(nn.Module):
         # x = x.permute(1, 0, 2)  # LND -> NLD
 
         # # x = self.visual.ln_post(x)
+        x[-1] = x[-1] @ self.image_projection
+        # if norm:
+        #     x[-1] = x[-1]/x[-1].norm(dim = -1, keepdim = True)
         x = self.norm(x)
         x = torch.mean(x[:, :, :], dim=1)
 
