@@ -17,27 +17,12 @@ from utils import MY_CLASSES, get_text_embeddings
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--opts", help="Modify config options by adding 'KEY VALUE' pairs.", default=None, nargs='+')
-parser.add_argument('--name-list-path', type=str, default=None, help='path to name list file')
 parser.add_argument('--batch-size', type=int, default=4, help="batch size for single GPU")
-parser.add_argument('--dataset', type=str, default='imagenet', help='dataset name')       
-parser.add_argument('--zip', action='store_true', help='use zipped dataset instead of folder dataset')
-parser.add_argument('--cache-mode', type=str, default='part', choices=['no', 'full', 'part'],
-                    help='no: no cache, full: cache all data, part: sharding the dataset into pieces and only cache one piece')
-parser.add_argument('--resume', help='resume from checkpoint')
-parser.add_argument('--accumulation-steps', type=int, help="gradient accumulation steps")
-parser.add_argument('--use-checkpoint', action='store_true', help="whether to use gradient checkpointing to save memory")
-parser.add_argument('--amp-opt-level', type=str, default='O0', choices=['O0', 'O1', 'O2'], help='mixed precision opt level, if O0, no amp is used')
+
+
+
+
 parser.add_argument('--output', default='output', type=str, metavar='PATH', help='root of output folder')
-parser.add_argument('--tag', help='tag of experiment')
-parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
-parser.add_argument('--throughput', action='store_true', help='Test throughput only')
-parser.add_argument('--debug', action='store_true', help='Perform debug only')
-parser.add_argument("--local_rank", type=int, default=0, help='local rank for DistributedDataParallel')
-
-
-
-
 parser.add_argument('--cfg', type=str, default='configs/unicl_swin_tiny.yaml', help='config file path')
 parser.add_argument('--unicl_model', type=str, default='checkpoint/yfcc14m.pth', help='unicl model path')
 parser.add_argument('--data-path', type=str, help='path to dataset')

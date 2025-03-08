@@ -247,57 +247,23 @@ def update_config(config, args):
     _update_config_from_file(config, args.cfg)
 
     config.defrost()
-    if args.opts:
-        config.merge_from_list(args.opts)
 
     # merge from specific arguments
     if args.batch_size:
-        config.DATASET.BATCH_SIZE = args.batch_size
-    if args.dataset:
-        config.DATA.DATASET = args.dataset            
-    if args.data_path:
-        config.DATA.DATA_PATH = args.data_path
-    if args.zip:
-        config.DATA.ZIP_MODE = True
-    if args.cache_mode:
-        config.DATA.CACHE_MODE = args.cache_mode
-    if args.resume:
-        config.MODEL.RESUME = args.resume
-    if args.accumulation_steps:
-        config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
-    if args.use_checkpoint:
-        config.TRAIN.USE_CHECKPOINT = True
-    if args.amp_opt_level:
-        # config.AMP_OPT_LEVEL = args.amp_opt_level
-        config.AMP_OPT_LEVEL = "O0"
+        config.DATASET.BATCH_SIZE = args.batch_size         
+
     if args.output:
         config.OUTPUT = args.output
-    if args.tag:
-        config.TAG = args.tag
-    if args.eval:
-        config.EVAL_MODE = True
-    if args.throughput:
-        config.THROUGHPUT_MODE = True
-    if args.debug:
-        config.DEBUG_MODE = True
         
-    if args.dataset == 'voc':
-        config.MODEL.NUM_CLASSES = 21
-    if args.dataset == 'coco':
-        config.MODEL.NUM_CLASSES = 91
+   
     if args.data_path:
         config.DATASET.DATA_DIR = args.data_path
-    if args.name_list_path:
-        config.DATASET.NAME_LIST_DIR = args.name_list_path
     
     if args.unicl_model:
         config.MODEL.PRETRAINED = args.unicl_model
 
     if config.DATA.DATASET == 'imagewoof':
         config.MODEL.NUM_CLASSES = 10
-
-    # set local rank for distributed training
-    config.LOCAL_RANK = args.local_rank
 
     # output folder
     config.OUTPUT = os.path.join(config.OUTPUT, config.MODEL.NAME, config.TAG)
