@@ -113,7 +113,8 @@ class WeCLIP(nn.Module):
         # for name, param in self.encoder.named_parameters():
         #     print(name, param.requires_grad)
 
-        self.in_channels = in_channels
+        self.in_channels = [512, 512, 512, 512]
+        self.embedding_dim = 128
 
         self.decoder_fts_fuse = SegFormerHead(in_channels=self.in_channels,embedding_dim=self.embedding_dim,
                                               num_classes=self.num_classes, index=11)

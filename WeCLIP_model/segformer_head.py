@@ -14,7 +14,7 @@ class MLP(nn.Module):
     """
     Linear Embedding
     """
-    def __init__(self, input_dim=2048, embed_dim=768):
+    def __init__(self, input_dim=2048, embed_dim=512):
         super().__init__()
         self.proj = nn.Linear(input_dim, embed_dim)
         self.proj_2 = nn.Linear(embed_dim, embed_dim)
@@ -32,7 +32,7 @@ class Conv_Linear(nn.Module):
     """
     Linear Embedding
     """
-    def __init__(self, input_dim=2048, embed_dim=768):
+    def __init__(self, input_dim=2048, embed_dim=512):
         super().__init__()
         self.proj = nn.Conv2d(input_dim, embed_dim, kernel_size=1)
         self.proj_2 = nn.Conv2d(embed_dim, embed_dim, kernel_size=1)
