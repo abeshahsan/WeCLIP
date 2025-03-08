@@ -189,17 +189,28 @@ class UniCLModel(nn.Module):
         T = self.logit_scale.exp()
 
         return features_image, features_text, T
-    
 
 
     def forward_last_layer(self, image_features, text_features):
-        image_features = image_features.permute(1, 0, 2)
-        # image_features = interpolate_and_project(image_features, (7, 7), 768)
-        logits_per_image, attn_weight = self.image_encoder.forward_last_layer(image_features, text_features)
+        x = self.image_encoder.layers[-1].blocks[-1](image_features)
 
-        attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
+        if self.image_encoder.layers[-1].downsample is not None:
+            x = self.image_encoder.layers[-1].downsample(x)
+        
+        x = self.image_encoder.norm(x)  # B L C
+        x = self.image_encoder.avgpool(x.transpose(1, 2))  # B C 1
+        x = torch.flatten(x, 1)
+        x = x @ self.image_projection
 
-        return logits_per_image, attn_weight
+        features_image = x
+
+        # print(f'Features image: {features_image.size()}')
+        # print(f'Features text: {text_features.size()}')
+        
+        logit_scale = self.logit_scale.exp()
+        logits_per_image = logit_scale * features_image @ text_features.t()
+        
+        return logits_per_image
 
 
 def build_unicl_model(config, **kwargs):
