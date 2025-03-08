@@ -158,7 +158,28 @@ class UniCLModel(nn.Module):
         if norm:
             x = x / x.norm(dim=-1, keepdim=True)
 
-        return x
+        return 
+    
+    def forward_last_layer(self, image_features, text_features):
+        features_image = self.image_encoder.layers[-1].blocks[-1](image_features)
+
+        if self.image_encoder.layers[-1].downsample is not None:
+            features_image = self.image_encoder.layers[-1].downsample(features_image)
+        
+        x = self.image_encoder.norm(features_image)  # B L C
+        x = self.image_encoder.avgpool(x.transpose(1, 2))  # B C 1
+        x = torch.flatten(x, 1)
+        x = x @ self.image_projection
+
+        features_image = x
+
+        print(f'Features image: {features_image.size()}')
+        print(f'Features text: {text_features.size()}')
+        
+        logit_scale = self.logit_scale.exp()
+        logits_per_image = logit_scale * features_image @ text_features.t()
+        
+        return logits_per_image
 
     def encode_text(self, text, norm=True):
         x = self.text_encoder(**text)

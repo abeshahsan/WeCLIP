@@ -8,7 +8,7 @@ import torchvision
 import matplotlib.pyplot as plt
 from config import get_config
 from datasets import voc
-from model.model import build_unicl_model
+from model.model import UniCLModel, build_unicl_model
 from model.text_encoder.build import build_tokenizer
 import cv2
 import numpy as np
@@ -59,7 +59,7 @@ gradcam_gradients = None
 feature_activations = []
 attn_activations = []
 
-def process_image(model, image_path, label_path,  text_embeddings, logit_scale, cfg, args):
+def process_image(model:UniCLModel, image_path, label_path,  text_embeddings, logit_scale, cfg, args):
     image = Image.open(image_path).convert('RGB')
     
     label = np.array(Image.open(label_path), dtype=np.uint8)
@@ -77,10 +77,6 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
     ])(image)
 
     input_tensor = input_tensor.unsqueeze(0).cuda()
-
-    target_layer = model.image_encoder.layers[-1].blocks[-1]
-    forward_handle = target_layer.register_forward_hook(gradcam_forward_hook)
-    backward_handle = target_layer.register_backward_hook(gradcam_backward_hook)
     
     for layer in model.image_encoder.layers:
         for block in layer.blocks:
@@ -88,16 +84,22 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
             block.attn.attn_drop.register_forward_hook(attn_forward_hook)
     
     # Forward pass (do not use torch.no_grad here so that gradients can be computed)
-    image_features = model.encode_image(input_tensor, norm=False)
+    model.encode_image(input_tensor, norm=False)
 
-    # image_features_norm = image_features / image_features.norm(dim=1, keepdim=True)
-    # text_embeddings_norm = text_embeddings / text_embeddings.norm(dim=1, keepdim=True)
-    # cosine similarity as logits
-    logit_scale = model.logit_scale.exp()
-    logits_per_image = logit_scale * image_features @ text_embeddings.t()
-    # logits_per_image = logit_scale * image_features_norm @ text_embeddings_norm.t()
+    for layer in model.image_encoder.layers:
+        for block in layer.blocks:
+            block._forward_hooks.clear()
+
+    target_layer = model.image_encoder.layers[-1].blocks[-1]
+    forward_handle = target_layer.register_forward_hook(gradcam_forward_hook)
+    backward_handle = target_layer.register_backward_hook(gradcam_backward_hook)
+
+    logits_per_image = model.forward_last_layer(feature_activations[-2], text_embeddings)
 
     # logits_per_image = logits_per_image.softmax(dim=-1)
+    torch.set_printoptions(profile="full")
+    print(f'Logits per image: {logits_per_image}')
+    torch.set_printoptions(profile="default")
 
     label_list = [torch.argmax(logits_per_image, dim=-1).item()]
 
@@ -148,9 +150,7 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
     
     forward_handle.remove()
     backward_handle.remove()
-    for layer in model.image_encoder.layers:
-        for block in layer.blocks:
-            block._forward_hooks.clear()
+
 
 def feature_forward_hook(module, input, output):
     feature_activations.append(output)
