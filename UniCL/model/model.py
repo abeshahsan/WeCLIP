@@ -202,7 +202,7 @@ class UniCLModel(nn.Module):
         fts_taken = []
         attn_taken = []
 
-        for i in range(4, 14):
+        for i in range(4, 15):
             # x[i] = x[i] @ self.image_projection
             # if norm:
             #     x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
