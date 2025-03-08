@@ -189,9 +189,9 @@ class UniCLModel(nn.Module):
         self.original_last_attn_weight = attn[-1].clone()
         
         #project last layer fts from 1024 to 512
-        self.original_last_fts = self.original_last_fts @ self.image_projection
+        x[-1] = x[-1] @ self.image_projection
         if norm:
-            self.original_last_fts = self.original_last_fts/self.original_last_fts.norm(dim = -1, keepdim = True)
+            x[-1] = x[-1]/x[-1].norm(dim = -1, keepdim = True)
 
 
         # for i, fts in enumerate(x):
