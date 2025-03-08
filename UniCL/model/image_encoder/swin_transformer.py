@@ -635,25 +635,25 @@ class SwinTransformer(nn.Module):
         # x = x.permute(1, 0, 2)  # LND -> NLD
 
         # # x = self.visual.ln_post(x)
-        x = x @ self.image_projection
-        # if norm:
-        #     x[-1] = x[-1]/x[-1].norm(dim = -1, keepdim = True)
-        x = self.norm(x)
-        x = torch.mean(x[:, :, :], dim=1)
+        # x = x @ self.image_projection
+        # # if norm:
+        # #     x[-1] = x[-1]/x[-1].norm(dim = -1, keepdim = True)
+        # x = self.norm(x)
+        # x = torch.mean(x[:, :, :], dim=1)
 
-        # # if self.visual.proj is not None:
-        # #     x = x @ self.visual.proj
+        # # # if self.visual.proj is not None:
+        # # #     x = x @ self.visual.proj
 
-        image_features = x
+        # image_features = x
 
-        # normalized features
-        image_features = image_features / image_features.norm(dim=1, keepdim=True)
-        text_features = text_features / text_features.norm(dim=1, keepdim=True)
-        # cosine similarity as logits
-        logit_scale = self.logit_scale.exp()
-        logits_per_image = logit_scale * image_features @ text_features.t()
+        # # normalized features
+        # image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        # text_features = text_features / text_features.norm(dim=1, keepdim=True)
+        # # cosine similarity as logits
+        # logit_scale = self.logit_scale.exp()
+        # logits_per_image = logit_scale * image_features @ text_features.t()
 
-        # shape = [global_batch_size, global_batch_size]
-        logits_per_image = logits_per_image.softmax(dim=-1)
+        # # shape = [global_batch_size, global_batch_size]
+        # logits_per_image = logits_per_image.softmax(dim=-1)
 
-        return logits_per_image, attn_weight
+        return x, attn_weight
