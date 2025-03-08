@@ -138,6 +138,12 @@ class WeCLIP(nn.Module):
         fts_all = feature_activations[:-1]
         attn_weight_list = attn_activations[:-1]
 
+        for fts in fts_all:
+            print(f'fts shape: {fts.size()}')
+
+        for attn in attn_weight_list:
+            print(f'attn shape: {attn.size()}')
+
         self.grad_cam = GradCAM(model=self.encoder,
                                 target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
                                 use_cuda=True,
