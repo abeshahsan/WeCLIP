@@ -4,3 +4,6 @@
 **/checkpoint/
 **/pretrained/
 
+**/*.log
+
+**/tb_logger/
