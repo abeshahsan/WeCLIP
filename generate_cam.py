@@ -51,7 +51,28 @@ def create_val_loader(val_dataset, cfg, args):
         pin_memory=False,
         drop_last=False
     )
-    return val_loader
+    return 
+
+def add_intermideate_fts_hook(model:UniCLModel):
+    for layer in model.image_encoder.layers:
+        for block in layer.blocks:
+            block.register_forward_hook(feature_forward_hook)
+            block.attn.attn_drop.register_forward_hook(attn_forward_hook)
+
+def remove_intermideate_fts_hook(model:UniCLModel):
+    for layer in model.image_encoder.layers:
+        for block in layer.blocks:
+            block._forward_hooks.clear()
+
+def add_gradcam_hook(model:UniCLModel):
+    target_layer = model.image_encoder.layers[-1].blocks[-1]
+    target_layer.register_forward_hook(gradcam_forward_hook)
+    target_layer.register_backward_hook(gradcam_backward_hook)
+
+def remove_gradcam_hook(model:UniCLModel):
+    target_layer = model.image_encoder.layers[-1].blocks[-1]
+    target_layer._forward_hooks.clear()
+    target_layer._backward_hooks.clear()
 
 # Global variables to store activations and gradients for GradCAM
 gradcam_activations = None
@@ -77,22 +98,13 @@ def process_image(model:UniCLModel, image_path, label_path,  text_embeddings, lo
     ])(image)
 
     input_tensor = input_tensor.unsqueeze(0).cuda()
+
     
-    for layer in model.image_encoder.layers:
-        for block in layer.blocks:
-            block.register_forward_hook(feature_forward_hook)
-            block.attn.attn_drop.register_forward_hook(attn_forward_hook)
-    
-    # Forward pass (do not use torch.no_grad here so that gradients can be computed)
+    add_intermideate_fts_hook(model)
     model.encode_image(input_tensor, norm=False)
+    remove_intermideate_fts_hook(model)
 
-    for layer in model.image_encoder.layers:
-        for block in layer.blocks:
-            block._forward_hooks.clear()
-
-    target_layer = model.image_encoder.layers[-1].blocks[-1]
-    forward_handle = target_layer.register_forward_hook(gradcam_forward_hook)
-    backward_handle = target_layer.register_backward_hook(gradcam_backward_hook)
+    add_gradcam_hook(model)
 
     feature_activation = feature_activations.pop()
     logits_per_image = model.forward_last_layer(feature_activations[-1], text_embeddings)
@@ -149,9 +161,7 @@ def process_image(model:UniCLModel, image_path, label_path,  text_embeddings, lo
     for block_idx, attn_activation in enumerate(attn_activations):
         print(f'Block {block_idx} attention activation shape: {attn_activation.shape}')
     
-    forward_handle.remove()
-    backward_handle.remove()
-
+    remove_gradcam_hook(model)
 
 def feature_forward_hook(module, input, output):
     feature_activations.append(output)
