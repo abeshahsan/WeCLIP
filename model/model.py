@@ -161,12 +161,12 @@ class UniCLModel(nn.Module):
         return 
     
     def forward_last_layer(self, image_features, text_features):
-        features_image = self.image_encoder.layers[-1].blocks[-1](image_features)
+        x = self.image_encoder.layers[-1].blocks[-1](image_features)
 
         if self.image_encoder.layers[-1].downsample is not None:
-            features_image = self.image_encoder.layers[-1].downsample(features_image)
+            x = self.image_encoder.layers[-1].downsample(x)
         
-        x = self.image_encoder.norm(features_image)  # B L C
+        x = self.image_encoder.norm(x)  # B L C
         x = self.image_encoder.avgpool(x.transpose(1, 2))  # B C 1
         x = torch.flatten(x, 1)
         x = x @ self.image_projection
