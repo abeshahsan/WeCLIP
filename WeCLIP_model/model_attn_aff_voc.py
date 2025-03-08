@@ -14,7 +14,7 @@ from WeCLIP_model.PAR import PAR
 from UniCL.model.model import UniCLModel
 from UniCL.model.model import build_unicl_model
 from UniCL.config import get_config
-from UniCL.model.model import interpolate_and_project
+# from UniCL.model.model import interpolate_and_project
 
 from UniCL.hooks_and_stuff import gradcam_forward_hook, gradcam_backward_hook, feature_forward_hook, attn_forward_hook, freeze_model, add_intermideate_fts_hook, remove_intermideate_fts_hook, add_gradcam_hook, remove_gradcam_hook, feature_activations, attn_activations, gradcam_activations, gradcam_gradients
 
@@ -29,7 +29,7 @@ def Normalize_clip():
 
 def reshape_transform(tensor, height=28, width=28):
     
-    tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
+    # tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
 
     # tensor = tensor.permute(1, 0, 2)
     result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
@@ -85,25 +85,21 @@ def _refine_cams(ref_mod, images, cams, valid_key):
 
 
 class WeCLIP(nn.Module):
-    def __init__(self, args = None, num_classes=None, clip_model=None, unicl_model = None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
+    def __init__(self, args = None, num_classes=None, clip_model=None, unicl_model = None, unicl_config = None, embedding_dim=256, in_channels=512, dataset_root_path=None, device='cuda'):
         super().__init__()
         self.num_classes = num_classes
         self.embedding_dim = embedding_dim
 
-        # self.encoder, _ = clip.load(clip_model, device=device)
-
-        """CHANGE THIS TO THE LAST LAYER OF THE ENCODER"""
-
-        unicl_config = get_config()
+        unicl_config = get_config(unicl_config)
         unicl_config['MODEL']['PRETRAINED'] = unicl_model
-        self.encoder = build_unicl_model(unicl_config)
+        self.encoder = build_unicl_model(unicl_config, args)
         self.encoder = self.encoder.to(device)
         self.encoder.eval()
 
         freeze_model(self.encoder, ['image_encoder.layers.3.blocks.1'])
 
-        for name, param in self.encoder.named_parameters():
-            print(name, param.requires_grad)
+        # for name, param in self.encoder.named_parameters():
+        #     print(name, param.requires_grad)
 
         self.in_channels = in_channels
 
@@ -133,8 +129,6 @@ class WeCLIP(nn.Module):
             param_groups[3].append(param)
 
         return param_groups
-    
-
 
     def forward(self, img, img_names='2007_000032', mode='train'):
         cam_list = []

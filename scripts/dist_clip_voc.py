@@ -30,11 +30,14 @@ parser.add_argument("--config",
                     type=str,
                     help="config")
 parser.add_argument("--seg_detach", action="store_true", help="detach seg")
-parser.add_argument("--work_dir", default=None, type=str, help="work_dir")
+parser.add_argument("--work-dir", default=None, type=str, help="work_dir")
 parser.add_argument("--radius", default=8, type=int, help="radius")
 parser.add_argument("--crop_size", default=224, type=int, help="crop_size")
-parser.add_argument("--unicl_pretrain_path", default=None, type=str, help="unicl_pretrain_path")
+parser.add_argument("--unicl-pretrain-path", default=None, type=str, help="unicl-pretrain-path")
+parser.add_argument("--unicl-config", default=None, type=str, help="unicl-config")
 parser.add_argument("--backbone-verbose", action="store_true", help="backbone-verbose")
+parser.add_argument("--root-dir", default=None, type=str, help="root-dir")
+parser.add_argument("--name-list-dir", default=None, type=str, help="name-list-dir")
 
 
 def setup_seed(seed):
@@ -189,6 +192,7 @@ def train(cfg):
         num_classes=cfg.dataset.num_classes,
         clip_model=cfg.clip_init.clip_pretrain_path,
         unicl_model=cfg.unicl_init.unicl_pretrain_path,
+        unicl_config=cfg.unicl_init.unicl_config,
         embedding_dim=cfg.clip_init.embedding_dim,
         in_channels=cfg.clip_init.in_channels,
         dataset_root_path=cfg.dataset.root_dir,
@@ -334,6 +338,19 @@ if __name__ == "__main__":
 
     if args.work_dir is not None:
         cfg.work_dir.dir = args.work_dir
+    
+    if args.root_dir is not None:
+        cfg.dataset.root_dir = args.root_dir
+    
+    if args.name_list_dir is not None:
+        cfg.dataset.name_list_dir = args.name_list_dir
+
+    if args.unicl_pretrain_path is not None:
+        cfg.unicl_init.unicl_pretrain_path = args.unicl_pretrain_path
+    
+    if args.unicl_config is not None:
+        cfg.unicl_init.unicl_config = args.unicl_config
+        print(f'unicl config {cfg.unicl_init.unicl_config}')
 
     timestamp = "{0:%Y-%m-%d-%H-%M}".format(datetime.datetime.now())
 

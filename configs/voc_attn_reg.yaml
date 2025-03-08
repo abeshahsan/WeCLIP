@@ -44,3 +44,4 @@ clip_init:
 
 unicl_init:
   unicl_pretrain_path: /content/WeCLIP/yfcc14m.pth
+  unicl_config: /content/WeCLIP/configs/unicl.yaml
