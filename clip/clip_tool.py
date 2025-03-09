@@ -62,7 +62,7 @@ def generate_trans_mat(aff_mask, attn_weight, grayscale_cam):
 
 def compute_trans_mat(attn_weight):
     # aff_mat = attn_weight
-    aff_mat = F.interpolate(attn_weight.unsqueeze(1), size=(196, 196), mode='bilinear', align_corners=False).squeeze(1)
+    aff_mat = F.interpolate(attn_weight.unsqueeze(0).unsqueeze(0), size=(196, 196), mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
 
     trans_mat = aff_mat / torch.sum(aff_mat, dim=0, keepdim=True)
     trans_mat = trans_mat / torch.sum(trans_mat, dim=1, keepdim=True)
