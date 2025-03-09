@@ -269,7 +269,7 @@ class UniCLModel(nn.Module):
 
 
 
-        attn_weight = interpolate_and_project(attn_weight, (14, 14), 196)
+        attn_weight = F.interpolate(attn_weight.unsqueeze(1), size=(98, 98), mode='bilinear', align_corners=False).squeeze(1)
 
         return logits_per_image, attn_weight
 

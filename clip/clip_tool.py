@@ -141,7 +141,6 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         grayscale_cam, logits_per_image, attn_weight_last = cam(input_tensor=input_tensor,
                                                                 targets=targets,
                                                                 target_size=None)  # (ori_width, ori_height))
-
         grayscale_cam = grayscale_cam[0, :]
 
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
