@@ -1,0 +1,6 @@
+python -W ignore scripts/dist_clip_voc.py `
+--config configs/voc_attn_reg.yaml `
+--unicl-pretrain-path checkpoint/yfcc14m_swin_base.pth  `
+--unicl-config UniCL/configs/unicl_swin_base.yaml `
+--work-dir ./ --root-dir C:/Users/abesh/Downloads/archive/VOC2012 `
+--name-list-dir datasets/voc
