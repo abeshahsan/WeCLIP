@@ -16,6 +16,7 @@ from pytorch_grad_cam.utils.image import scale_cam_image
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
 class ClipOutputTarget:
     def __init__(self, category):
@@ -60,7 +61,8 @@ def generate_trans_mat(aff_mask, attn_weight, grayscale_cam):
 
 
 def compute_trans_mat(attn_weight):
-    aff_mat = attn_weight
+    # aff_mat = attn_weight
+    aff_mat = F.interpolate(attn_weight.unsqueeze(1), size=(196, 196), mode='bilinear', align_corners=False).squeeze(1)
 
     trans_mat = aff_mat / torch.sum(aff_mat, dim=0, keepdim=True)
     trans_mat = trans_mat / torch.sum(trans_mat, dim=1, keepdim=True)
