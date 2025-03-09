@@ -101,10 +101,10 @@ class WeCLIP(nn.Module):
         # for param in self.encoder.parameters():
         #     param.requires_grad = False
 
-        # for name, param in self.encoder.named_parameters():
-        #     if "image_encoder.layers.3.blocks.1" not in name:
-        #         param.requires_grad = False
-        #     print(f"{name}: requires_grad = {param.requires_grad}")
+        for name, param in self.encoder.named_parameters():
+            if "image_encoder.layers.3.blocks.1" not in name:
+                param.requires_grad = False
+            # print(f"{name}: requires_grad = {param.requires_grad}")
 
         # for name, param in self.encoder.named_parameters():
         #     if "11" not in name:
@@ -126,7 +126,7 @@ class WeCLIP(nn.Module):
 
 
         # self.target_layers = [self.encoder.visual.transformer.resblocks[-1].ln_1]
-        self.target_layers = [self.encoder.image_encoder.layers[-1].blocks[-1].norm2]
+        self.target_layers = [self.encoder.image_encoder.layers[-1].blocks[-1].mlp]
 
 
         self.grad_cam = GradCAM(model=self.encoder, target_layers=self.target_layers, reshape_transform=reshape_transform)
