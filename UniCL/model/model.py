@@ -208,7 +208,7 @@ class UniCLModel(nn.Module):
             #     x[i] = x[i] / x[i].norm(dim=-1, keepdim=True)
                 # projected_fts_all[i] = projected_fts_all[i] / projected_fts_all[i].norm(dim=-1, keepdim=True)
             fts_taken.append(x[i])
-            attn[i] = interpolate_and_project(attn[i], (14, 14), 196)
+            # attn[i] = interpolate_and_project(attn[i], (14, 14), 196)
             attn_taken.append(attn[i])
 
 
