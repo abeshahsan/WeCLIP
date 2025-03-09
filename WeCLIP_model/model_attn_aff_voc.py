@@ -28,7 +28,7 @@ def Normalize_clip():
 
 def reshape_transform(tensor, height=28, width=28):
     
-    tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
+    # tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
 
     # tensor = tensor.permute(1, 0, 2)
     result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
