@@ -28,16 +28,22 @@ def Normalize_clip():
 
 
 def reshape_transform(tensor, height=28, width=28):
-    
-    # tensor = interpolate_and_project(tensor, (height, width), tensor.size(2))
 
-    # tensor = tensor.permute(1, 0, 2)
-    result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
+    
+    # tensor = tensor.permute(0, 3, 1, 2)
+
+    root = int(tensor.size(1) ** 0.5)
+    tensor = tensor.reshape(tensor.size(0), root, root, tensor.size(2))
+    tensor = tensor.permute(0, 3, 1, 2)
+    tensor = F.interpolate(tensor, size=(height, width), mode='bilinear', align_corners=False)
+    tensor = tensor.permute(0, 3, 1, 2)
+
 
     # Bring the channels to the first dimension,
     # like in CNNs.
-    result = result.transpose(2, 3).transpose(1, 2)
-    return result
+    tensor = tensor.transpose(2, 3).transpose(1, 2)
+    print(tensor.shape)
+    return tensor
 
 def build_tokenizer():
     
@@ -113,6 +119,60 @@ class WeCLIP(nn.Module):
         self.iter_num = 0
         self.require_all_fts = True
 
+        """
+            Block 0 feature activation shape: torch.Size([1, 3136, 128])
+            Block 1 feature activation shape: torch.Size([1, 3136, 128])
+            Block 2 feature activation shape: torch.Size([1, 784, 256])
+            Block 3 feature activation shape: torch.Size([1, 784, 256])
+
+            Block 4 feature activation shape: torch.Size([1, 196, 512])<--
+            Block 5 feature activation shape: torch.Size([1, 196, 512])
+            Block 6 feature activation shape: torch.Size([1, 196, 512])
+            Block 7 feature activation shape: torch.Size([1, 196, 512])
+            Block 8 feature activation shape: torch.Size([1, 196, 512])
+            Block 9 feature activation shape: torch.Size([1, 196, 512])
+            Block 10 feature activation shape: torch.Size([1, 196, 512])
+            Block 11 feature activation shape: torch.Size([1, 196, 512])
+            Block 12 feature activation shape: torch.Size([1, 196, 512])
+            Block 13 feature activation shape: torch.Size([1, 196, 512])
+            Block 14 feature activation shape: torch.Size([1, 196, 512])
+            Block 15 feature activation shape: torch.Size([1, 196, 512])<--
+            Block 16 feature activation shape: torch.Size([1, 196, 512])
+            Block 17 feature activation shape: torch.Size([1, 196, 512])
+            Block 18 feature activation shape: torch.Size([1, 196, 512])
+            Block 19 feature activation shape: torch.Size([1, 196, 512])
+            Block 20 feature activation shape: torch.Size([1, 196, 512])
+            Block 21 feature activation shape: torch.Size([1, 196, 512])
+
+            Block 22 feature activation shape: torch.Size([1, 49, 1024])
+            Block 23 feature activation shape: torch.Size([1, 49, 1024])
+
+            Attention activation shape: torch.Size([64, 4, 49, 49])
+            Attention activation shape: torch.Size([64, 4, 49, 49])
+            Attention activation shape: torch.Size([16, 8, 49, 49])
+            Attention activation shape: torch.Size([16, 8, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([4, 16, 49, 49])
+            Attention activation shape: torch.Size([1, 32, 49, 49])
+            Attention activation shape: torch.Size([1, 32, 49, 49])
+        """
+
 
     def get_param_groups(self):
 
@@ -135,26 +195,31 @@ class WeCLIP(nn.Module):
         self.encoder.encode_image(img)
         remove_intermideate_fts_hook(self.encoder)
 
-        fts_all = feature_activations[:-1]
-        attn_weight_list = attn_activations[:-1]
+        fts_all = feature_activations[4:15]
+        attn_weight_list = attn_activations[4:15]
 
-        for fts in fts_all:
+        attn_weight_list = attn_post_processing(self.encoder.image_encoder, attn_weight_list)
+
+
+        for fts in feature_activations:
             print(f'fts shape: {fts.size()}')
 
-        for attn in attn_weight_list:
-            print(f'attn shape: {attn.size()}')
+        # for attn in attn_weight_list:
+        #     print(f'attn shape: {attn.size()}')
 
         self.grad_cam = GradCAM(model=self.encoder,
                                 target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
-                                use_cuda=True,
+                                # use_cuda=True,
                                 reshape_transform=reshape_transform)
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
-        if self.require_all_fts==True:
-            cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
-        else:
-            cam_fts_all = self.encoder.get_original_last_fts()[0].permute(2, 1, 0, 3)
+
+        cam_fts_all = feature_activations[-2].unsqueeze(0).permute(1, 0, 2, 3) #(1, hw, 1, c)
+        # if self.require_all_fts==True:
+        #     cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
+        # else:
+        #     cam_fts_all = self.encoder.get_original_last_fts()[0].permute(2, 1, 0, 3)
 
         # all_img_tokens = fts_all_stack[:, 1:, ...]
         all_img_tokens = fts_all_stack
@@ -179,6 +244,7 @@ class WeCLIP(nn.Module):
             img_path = os.path.join(self.root_path, str(img_name)+'.png')
             img_i = img[i]
             cam_fts = cam_fts_all[i]
+            print(cam_fts.shape)
             cam_attn = attn_weight_stack[i]
             seg_attn = attn_pred[i].unsqueeze(0)
             

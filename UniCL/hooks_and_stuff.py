@@ -48,3 +48,25 @@ def remove_gradcam_hook(model:UniCLModel):
     target_layer = model.image_encoder.layers[-1].blocks[-1]
     target_layer._forward_hooks.clear()
     target_layer._backward_hooks.clear()
+
+def attn_post_processing(model, attn_weight_list):
+
+    new_attn_weight_list = []
+
+    for attn_weight in attn_weight_list:
+        B = attn_weight.shape[0]
+        attn_weight = attn_weight.mean(dim = 1)# for heads
+        grid_size = int((attn_weight.shape[0]//B) ** 0.5)
+
+        window_size = model.layers[0].blocks[0].window_size
+
+        attn_weight = attn_weight.view(B, grid_size, grid_size, window_size**2, window_size**2)
+
+        attn_weight = attn_weight.permute(0, 1, 3, 2, 4).contiguous()  
+        attn_weight = attn_weight.view(B, grid_size * (window_size ** 2), grid_size * (window_size ** 2))
+
+        new_attn_weight_list.append(attn_weight)
+
+    return new_attn_weight_list
+
+    
