@@ -41,7 +41,7 @@ def reshape_transform(tensor, height=28, width=28):
 
     # Bring the channels to the first dimension,
     # like in CNNs.
-    tensor = tensor.transpose(2, 3).transpose(1, 2)
+    # tensor = tensor.transpose(2, 3).transpose(1, 2)
     print(tensor.shape)
     return tensor
 
@@ -203,8 +203,8 @@ class WeCLIP(nn.Module):
         attn_weight_list, attn_weight_last = attn_post_processing(self.encoder.image_encoder, attn_weight_list, attn_weight_last)
 
 
-        for fts in feature_activations:
-            print(f'fts shape: {fts.size()}')
+        # for fts in feature_activations:
+        #     print(f'fts shape: {fts.size()}')
 
         # for attn in attn_weight_list:
         #     print(f'attn shape: {attn.size()}')
