@@ -36,7 +36,7 @@ def reshape_transform(tensor, height=28, width=28):
     tensor = tensor.reshape(tensor.size(0), root, root, tensor.size(2))
     tensor = tensor.permute(0, 3, 1, 2)
     tensor = F.interpolate(tensor, size=(height, width), mode='bilinear', align_corners=False)
-    tensor = tensor.permute(0, 3, 1, 2)
+    tensor = tensor.permute(1, 0, 2, 3)
 
 
     # Bring the channels to the first dimension,
