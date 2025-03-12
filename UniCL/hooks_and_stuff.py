@@ -1,5 +1,6 @@
 # Global variables to store activations and gradients for GradCAM
 from UniCL.model.model import UniCLModel
+import torch.nn.functional as F
 
 
 gradcam_activations = None
@@ -49,7 +50,7 @@ def remove_gradcam_hook(model:UniCLModel):
     target_layer._forward_hooks.clear()
     target_layer._backward_hooks.clear()
 
-def attn_post_processing(model, attn_weight_list):
+def attn_post_processing(model, attn_weight_list, attn_weight_last):
 
     new_attn_weight_list = []
 
@@ -66,6 +67,10 @@ def attn_post_processing(model, attn_weight_list):
         attn_weight = attn_weight.view(B, grid_size * (window_size ** 2), grid_size * (window_size ** 2))
 
         new_attn_weight_list.append(attn_weight)
+
+
+    attn_weight_last = attn_weight_last.mean(dim = 1)
+    attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False)
 
     return new_attn_weight_list
 

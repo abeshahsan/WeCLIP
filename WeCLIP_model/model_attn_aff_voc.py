@@ -198,7 +198,9 @@ class WeCLIP(nn.Module):
         fts_all = feature_activations[4:15]
         attn_weight_list = attn_activations[4:15]
 
-        attn_weight_list = attn_post_processing(self.encoder.image_encoder, attn_weight_list)
+        attn_weight_last = attn_activations[-1]
+
+        attn_weight_list, attn_weight_last = attn_post_processing(self.encoder.image_encoder, attn_weight_list, attn_weight_last)
 
 
         for fts in feature_activations:
@@ -214,11 +216,11 @@ class WeCLIP(nn.Module):
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
+        attn_weight_last = attn_weight_last.unsqueeze(0).permute(1, 0, 2, 3)
 
         cam_fts_all = feature_activations[-2].unsqueeze(0).permute(1, 0, 2, 3) #(1, hw, 1, c)
-        attn_weight_last = attn_activations[-1]
 
-        attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False).unsqueeze(0).permute(1, 0, 2, 3)
+        # attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False).unsqueeze(0).permute(1, 0, 2, 3)
 
         # if self.require_all_fts==True:
         #     cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
