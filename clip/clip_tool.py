@@ -104,7 +104,7 @@ def generate_trans_mat_seg(aff_mask, attn_weight, grayscale_cam):
 
 
 def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,
-                       fg_text_features, cam, mode='train', require_seg_trans=False):
+                       fg_text_features, cam, attn_weight_last, mode='train', require_seg_trans=False):
     bg_text_features = bg_text_features.cuda()
     fg_text_features = fg_text_features.cuda()
 
@@ -140,7 +140,7 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         label_index = new_class_names.index(label)
         keys.append(label_index)
         targets = [ClipOutputTarget(label_list.index(label))]
-        grayscale_cam, logits_per_image, attn_weight_last = cam(input_tensor=input_tensor,
+        grayscale_cam, logits_per_image = cam(input_tensor=input_tensor,
                                                                 targets=targets,
                                                                 target_size=None)  # (ori_width, ori_height))
 

@@ -216,6 +216,10 @@ class WeCLIP(nn.Module):
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
 
         cam_fts_all = feature_activations[-2].unsqueeze(0).permute(1, 0, 2, 3) #(1, hw, 1, c)
+        attn_weight_last = attn_activations[-1]
+
+        attn_weight_last = F.interpolate(attn_weight_last.unsqueeze(1), size=(98, 98), mode='bilinear', align_corners=False).squeeze(1)
+
         # if self.require_all_fts==True:
         #     cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
         # else:
@@ -256,6 +260,7 @@ class WeCLIP(nn.Module):
             cam_refined_list, keys, w, h = perform_single_voc_cam(img_path, img_i, cam_fts, cam_attn, seg_attn,
                                                                    self.bg_text_features, self.fg_text_features,
                                                                    self.grad_cam,
+                                                                   attn_weight_last,
                                                                    mode=mode,
                                                                    require_seg_trans=require_seg_trans)
 
