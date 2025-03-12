@@ -218,7 +218,7 @@ class WeCLIP(nn.Module):
         cam_fts_all = feature_activations[-2].unsqueeze(0).permute(1, 0, 2, 3) #(1, hw, 1, c)
         attn_weight_last = attn_activations[-1]
 
-        attn_weight_last = F.interpolate(attn_weight_last.unsqueeze(1), size=(98, 98), mode='bilinear', align_corners=False).squeeze(1)
+        attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False)
 
         # if self.require_all_fts==True:
         #     cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
@@ -251,6 +251,7 @@ class WeCLIP(nn.Module):
             print(cam_fts.shape)
             cam_attn = attn_weight_stack[i]
             seg_attn = attn_pred[i].unsqueeze(0)
+            attn_weight_last_i = attn_weight_last[i]
             
             if self.iter_num > 15000 or mode=='val': #15000
                 require_seg_trans = True
@@ -260,7 +261,7 @@ class WeCLIP(nn.Module):
             cam_refined_list, keys, w, h = perform_single_voc_cam(img_path, img_i, cam_fts, cam_attn, seg_attn,
                                                                    self.bg_text_features, self.fg_text_features,
                                                                    self.grad_cam,
-                                                                   attn_weight_last,
+                                                                   attn_weight_last_i,
                                                                    mode=mode,
                                                                    require_seg_trans=require_seg_trans)
 
