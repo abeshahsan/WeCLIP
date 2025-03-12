@@ -55,7 +55,7 @@ def attn_post_processing(model, attn_weight_list, attn_weight_last):
     new_attn_weight_list = []
 
     for attn_weight in attn_weight_list:
-        B = attn_weight.shape[0]
+        B = 4
         attn_weight = attn_weight.mean(dim = 1)# for heads
         grid_size = int((attn_weight.shape[0]//B) ** 0.5)
 
