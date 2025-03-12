@@ -70,7 +70,7 @@ def attn_post_processing(model, attn_weight_list, attn_weight_last):
 
 
     attn_weight_last = attn_weight_last.mean(dim = 1)
-    attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False)
+    attn_weight_last = F.interpolate(attn_weight_last.unsqueeze(1), size=(98, 98), mode='bilinear', align_corners=False).squeeze(1)
 
     return new_attn_weight_list
 
