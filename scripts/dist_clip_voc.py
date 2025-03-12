@@ -350,7 +350,6 @@ if __name__ == "__main__":
     
     if args.unicl_config is not None:
         cfg.unicl_init.unicl_config = args.unicl_config
-        print(f'unicl config {cfg.unicl_init.unicl_config}')
 
     timestamp = "{0:%Y-%m-%d-%H-%M}".format(datetime.datetime.now())
 

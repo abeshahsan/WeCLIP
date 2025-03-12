@@ -250,7 +250,6 @@ class WeCLIP(nn.Module):
             img_path = os.path.join(self.root_path, str(img_name)+'.png')
             img_i = img[i]
             cam_fts = cam_fts_all[i]
-            print(cam_fts.shape)
             cam_attn = attn_weight_stack[i]
             seg_attn = attn_pred[i].unsqueeze(0)
             attn_weight_last_i = attn_weight_last[i]

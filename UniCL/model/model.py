@@ -154,12 +154,8 @@ class UniCLModel(nn.Module):
 
         features_image = x
 
-        print(f'Features image: {features_image.size()}')
-        print(f'Features text: {text_features.size()}')
-        
         logit_scale = self.logit_scale.exp()
         logits_per_image = logit_scale * features_image @ text_features.t()
-        print(logits_per_image.shape)
         
         return logits_per_image
 
