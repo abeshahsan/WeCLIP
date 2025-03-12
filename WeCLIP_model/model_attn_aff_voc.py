@@ -218,7 +218,7 @@ class WeCLIP(nn.Module):
         cam_fts_all = feature_activations[-2].unsqueeze(0).permute(1, 0, 2, 3) #(1, hw, 1, c)
         attn_weight_last = attn_activations[-1]
 
-        attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False)
+        attn_weight_last = F.interpolate(attn_weight_last, size=(98, 98), mode='bilinear', align_corners=False).unsqueeze(0).permute(1, 0, 2, 3)
 
         # if self.require_all_fts==True:
         #     cam_fts_all = self.encoder.get_original_last_fts()[0].unsqueeze(0).permute(2, 1, 0, 3) #(1, hw, 1, c)
