@@ -42,7 +42,7 @@ def reshape_transform(tensor, height=28, width=28):
     # Bring the channels to the first dimension,
     # like in CNNs.
     # tensor = tensor.transpose(2, 3).transpose(1, 2)
-    print(tensor.shape)
+    # print(tensor.shape)
     return tensor
 
 def build_tokenizer():
@@ -191,9 +191,11 @@ class WeCLIP(nn.Module):
         self.encoder.eval()
         self.iter_num += 1
 
+
         add_intermideate_fts_hook(self.encoder)
         self.encoder.encode_image(img)
         remove_intermideate_fts_hook(self.encoder)
+
 
         fts_all = feature_activations[4:15]
         attn_weight_list = attn_activations[4:15]
@@ -202,12 +204,6 @@ class WeCLIP(nn.Module):
 
         attn_weight_list, attn_weight_last = attn_post_processing(self.encoder.image_encoder, attn_weight_list, attn_weight_last)
 
-
-        # for fts in feature_activations:
-        #     print(f'fts shape: {fts.size()}')
-
-        # for attn in attn_weight_list:
-        #     print(f'attn shape: {attn.size()}')
 
         self.grad_cam = GradCAM(model=self.encoder,
                                 target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
@@ -283,6 +279,8 @@ class WeCLIP(nn.Module):
             cam_list.append(cam_labels)
 
         all_cam_labels = torch.stack(cam_list, dim=0)
+
+        torch.cuda.empty_cache()
 
         return seg, all_cam_labels, attn_pred
 

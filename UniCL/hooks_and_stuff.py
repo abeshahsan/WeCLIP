@@ -1,7 +1,9 @@
 # Global variables to store activations and gradients for GradCAM
+import cv2
+import numpy as np
 from UniCL.model.model import UniCLModel
 import torch.nn.functional as F
-
+import os
 
 gradcam_activations = None
 gradcam_gradients = None
@@ -14,13 +16,6 @@ def feature_forward_hook(module, input, output):
 def attn_forward_hook(module, input, output):
     attn_activations.append(output)
 
-def gradcam_forward_hook(module, input, output):
-    global gradcam_activations
-    gradcam_activations = output
-
-def gradcam_backward_hook(module, grad_in, grad_out):
-    global gradcam_gradients
-    gradcam_gradients = grad_out[0]
 
 def freeze_model(model, unfreeze_layer_names):
     for name, param in model.named_parameters():
@@ -30,6 +25,8 @@ def freeze_model(model, unfreeze_layer_names):
             param.requires_grad = True
             
 def add_intermideate_fts_hook(model:UniCLModel):
+    feature_activations.clear()
+    attn_activations.clear()
     for layer in model.image_encoder.layers:
         for block in layer.blocks:
             block.register_forward_hook(feature_forward_hook)
@@ -39,16 +36,8 @@ def remove_intermideate_fts_hook(model:UniCLModel):
     for layer in model.image_encoder.layers:
         for block in layer.blocks:
             block._forward_hooks.clear()
+            block.attn.attn_drop._forward_hooks.clear()
 
-def add_gradcam_hook(model:UniCLModel):
-    target_layer = model.image_encoder.layers[-1].blocks[-1]
-    target_layer.register_forward_hook(gradcam_forward_hook)
-    target_layer.register_backward_hook(gradcam_backward_hook)
-
-def remove_gradcam_hook(model:UniCLModel):
-    target_layer = model.image_encoder.layers[-1].blocks[-1]
-    target_layer._forward_hooks.clear()
-    target_layer._backward_hooks.clear()
 
 def attn_post_processing(model, attn_weight_list, attn_weight_last):
 
@@ -74,4 +63,21 @@ def attn_post_processing(model, attn_weight_list, attn_weight_last):
 
     return new_attn_weight_list, attn_weight_last
 
-    
+selected_image_names = ['2007_000032', '2007_002105', '2007_002227', '2007_002234', '2007_002273']
+
+def save_some_cams(cam, image_path, cam_idx):
+    image_name = os.path.basename(image_path).split('.')[0]
+    original_image = cv2.imread(f'C:/Users/abesh/Downloads/archive/VOC2012/JPEGImages/{image_name}.jpg', cv2.IMREAD_COLOR)
+
+    with open(f'./imgs.txt', 'a') as f:
+        f.write(image_name + '\n')
+
+    if image_name in selected_image_names:
+        # Ensure cam is in the correct format
+        cam = (cam * 255).astype(np.uint8)
+        heatmap = cv2.applyColorMap(cv2.resize(cam, (original_image.shape[1], original_image.shape[0])), cv2.COLORMAP_JET)
+        heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
+        superimposed_img = cv2.addWeighted(original_image, 0.5, heatmap, 0.5, 0)
+
+        cv2.imwrite(f'./initial_cams/{image_name}_{cam_idx}.jpg', superimposed_img)
+

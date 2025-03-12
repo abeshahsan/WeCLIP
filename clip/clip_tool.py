@@ -1,6 +1,7 @@
 import os
 import torch
 from lxml import etree
+from UniCL.hooks_and_stuff import save_some_cams
 from clip.utils import parse_xml_to_dict, scoremap2bbox
 from clip.clip_text import class_names, new_class_names, class_names_coco, new_class_names_coco
 from tqdm import tqdm
@@ -149,14 +150,7 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
         
-        cam_outdir = '/content/initial_cams'
-        os.makedirs(cam_outdir, exist_ok=True)
-        plt.figure(figsize=(6.4, 4.8))  
-        plt.imshow(grayscale_cam_highres, cmap='viridis')
-        plt.colorbar()
-        plt.axis('off')
-        plt.savefig(f"/content/initial_cams/grayscale_cam_{os.path.basename(img_path), label}.png")  # Save each iteration's image
-        plt.close()
+        save_some_cams(grayscale_cam, img_path, idx)
 
         if idx == 0:
             if require_seg_trans == True:
