@@ -7,4 +7,7 @@
 **/*.log
 
 **/tb_logger/
+**/initial_cams/
+
+**/work_dir/
 

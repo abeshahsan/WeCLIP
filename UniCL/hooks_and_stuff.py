@@ -69,14 +69,17 @@ def save_some_cams(cam, image_path, cam_idx):
     image_name = os.path.basename(image_path).split('.')[0]
     original_image = cv2.imread(f'C:/Users/abesh/Downloads/archive/VOC2012/JPEGImages/{image_name}.jpg', cv2.IMREAD_COLOR)
 
-    with open(f'./imgs.txt', 'a') as f:
-        f.write(image_name + '\n')
+    # with open(f'./imgs.txt', 'a') as f:
+    #     f.write(image_name + '\n')
 
     if image_name in selected_image_names:
         # Ensure cam is in the correct format
+
+        # with open(f'./imgs.txt', 'a') as f:
+        #     f.write(str(cam))
+
         cam = (cam * 255).astype(np.uint8)
         heatmap = cv2.applyColorMap(cv2.resize(cam, (original_image.shape[1], original_image.shape[0])), cv2.COLORMAP_JET)
-        heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
         superimposed_img = cv2.addWeighted(original_image, 0.5, heatmap, 0.5, 0)
 
         cv2.imwrite(f'./initial_cams/{image_name}_{cam_idx}.jpg', superimposed_img)

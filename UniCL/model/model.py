@@ -152,10 +152,12 @@ class UniCLModel(nn.Module):
         x = torch.flatten(x, 1)
         x = x @ self.image_projection
 
-        features_image = x
+        
+        features_image = x / x.norm(dim=-1, keepdim=True)
+        features_text = text_features / text_features.norm(dim=-1, keepdim=True)
 
         logit_scale = self.logit_scale.exp()
-        logits_per_image = logit_scale * features_image @ text_features.t()
+        logits_per_image = logit_scale * features_image @ features_text.t()
         
         return logits_per_image
 
