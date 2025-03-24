@@ -196,6 +196,14 @@ class WeCLIP(nn.Module):
         self.encoder.encode_image(img)
         remove_intermideate_fts_hook(self.encoder)
 
+        print('Printing feature activations')
+        for fts in feature_activations:
+            print(fts.shape)
+        
+        print('Printing attention activations')
+        for attn in attn_activations:
+            print(attn.shape)
+
 
         fts_all = feature_activations[4:15]
         attn_weight_list = attn_activations[4:15]

@@ -177,14 +177,14 @@ def train(cfg):
 
     train_loader = DataLoader(train_dataset,
                               batch_size=cfg.train.samples_per_gpu,
-                              shuffle=False,
+                              shuffle=True,
                               num_workers=num_workers,
                               pin_memory=False,
                               drop_last=True,
                               prefetch_factor=4)
 
     val_loader = DataLoader(val_dataset,
-                            batch_size=1,
+                            batch_size=cfg.train.samples_per_gpu,
                             shuffle=False,
                             num_workers=num_workers,
                             pin_memory=False,
