@@ -104,14 +104,14 @@ def generate_trans_mat_seg(aff_mask, attn_weight, grayscale_cam):
 
 
 
-def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,
+def perform_single_voc_cam(annotation_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,
                        fg_text_features, cam, attn_weight_last, mode='train', require_seg_trans=False):
     bg_text_features = bg_text_features.cuda()
     fg_text_features = fg_text_features.cuda()
 
-    ori_image = Image.open(img_path)
-    ori_height, ori_width = np.asarray(ori_image).shape[:2]
-    label_id_list = np.unique(ori_image)
+    annot_image = Image.open(annotation_path)
+    ori_height, ori_width = np.asarray(annot_image).shape[:2]
+    label_id_list = np.unique(annot_image)
     label_id_list = (label_id_list - 1).tolist()
     if 255 in label_id_list:
         label_id_list.remove(255)
@@ -150,7 +150,7 @@ def perform_single_voc_cam(img_path, image, image_features, attn_weight_list, se
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
         
-        save_some_cams(grayscale_cam, img_path, idx)
+        save_some_cams(grayscale_cam, annotation_path, idx)
 
         if idx == 0:
             if require_seg_trans == True:

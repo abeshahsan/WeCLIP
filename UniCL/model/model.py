@@ -153,8 +153,8 @@ class UniCLModel(nn.Module):
         x = x @ self.image_projection
 
         
-        features_image = x / x.norm(dim=-1, keepdim=True)
-        features_text = text_features / text_features.norm(dim=-1, keepdim=True)
+        features_image = x 
+        features_text = text_features 
 
         logit_scale = self.logit_scale.exp()
         logits_per_image = logit_scale * features_image @ features_text.t()

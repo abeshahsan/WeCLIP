@@ -11,5 +11,5 @@ python -W ignore scripts/dist_clip_voc.py `
 --name-list-dir datasets/voc `
 --name-list-dir datasets/voc `
 --checkpoint-base-name apatoto_nai `
---unicl-pretrain-path checkpoint/yfcc14m_swin_base.pth  `
+--unicl-pretrain-path checkpoint/in21k_yfcc14m_swin_base.pth  `
 --root-dir C:/Users/abesh/Downloads/archive/VOC2012

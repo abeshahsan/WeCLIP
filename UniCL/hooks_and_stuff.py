@@ -4,6 +4,7 @@ import numpy as np
 from UniCL.model.model import UniCLModel
 import torch.nn.functional as F
 import os
+import re
 
 gradcam_activations = None
 gradcam_gradients = None
@@ -65,9 +66,11 @@ def attn_post_processing(model, batch_size, attn_weight_list, attn_weight_last):
 
 selected_image_names = ['2007_000032', '2007_002105', '2007_002227', '2007_002234', '2007_002273']
 
-def save_some_cams(cam, image_path, cam_idx):
-    image_name = os.path.basename(image_path).split('.')[0]
-    original_image = cv2.imread(f'C:/Users/abesh/Downloads/archive/VOC2012/JPEGImages/{image_name}.jpg', cv2.IMREAD_COLOR)
+def save_some_cams(cam, annotation_path, cam_idx):
+    annotation_path = annotation_path.replace('\\', '/')
+    image_name = re.sub(r'.*/VOC2012/SegmentationClassAug/(.*).png', r'\1', annotation_path)
+    jpeg_image_path = re.sub(r'(.*/VOC2012/).*', r'\1JPEGImages/' + image_name + '.jpg', annotation_path)
+    original_image = cv2.imread(jpeg_image_path, cv2.IMREAD_COLOR)
 
     # with open(f'./imgs.txt', 'a') as f:
     #     f.write(image_name + '\n')
