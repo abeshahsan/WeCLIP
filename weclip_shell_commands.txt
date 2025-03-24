@@ -5,5 +5,5 @@ python -W ignore scripts/dist_clip_voc.py `
 --work-dir ./work_dir `
 --checkpoint-dir checkpoint `
 --checkpoint-base-name apatoto_nai `
---root-dir C:/Users/abesh/Downloads/archive/VOC2012 `
 --name-list-dir datasets/voc
+--root-dir C:/Users/abesh/Downloads/archive/VOC2012 `

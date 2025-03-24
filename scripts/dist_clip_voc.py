@@ -391,6 +391,8 @@ if __name__ == "__main__":
     os.makedirs(cfg.work_dir.ckpt_dir, exist_ok=True)
     os.makedirs(cfg.work_dir.pred_dir, exist_ok=True)
     os.makedirs(cfg.work_dir.tb_logger_dir, exist_ok=True)
+    
+    os.makedirs('initial_cams', exist_ok=True)
 
     setup_logger(filename=os.path.join(cfg.work_dir.dir, timestamp+'.log'))
     logging.info('\nargs: %s' % args)
