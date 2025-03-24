@@ -184,7 +184,7 @@ def train(cfg):
                               prefetch_factor=4)
 
     val_loader = DataLoader(val_dataset,
-                            batch_size=cfg.train.samples_per_gpu,
+                            batch_size=cfg.val.samples_per_gpu,
                             shuffle=False,
                             num_workers=num_workers,
                             pin_memory=False,

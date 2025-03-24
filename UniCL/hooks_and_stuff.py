@@ -39,12 +39,12 @@ def remove_intermideate_fts_hook(model:UniCLModel):
             block.attn.attn_drop._forward_hooks.clear()
 
 
-def attn_post_processing(model, attn_weight_list, attn_weight_last):
+def attn_post_processing(model, batch_size, attn_weight_list, attn_weight_last):
 
     new_attn_weight_list = []
 
     for attn_weight in attn_weight_list:
-        B = 4
+        B = batch_size
         attn_weight = attn_weight.mean(dim = 1)# for heads
         grid_size = int((attn_weight.shape[0]//B) ** 0.5)
 

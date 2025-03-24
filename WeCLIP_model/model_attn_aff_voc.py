@@ -196,13 +196,13 @@ class WeCLIP(nn.Module):
         self.encoder.encode_image(img)
         remove_intermideate_fts_hook(self.encoder)
 
-        print('Printing feature activations')
-        for fts in feature_activations:
-            print(fts.shape)
+        # print('Printing feature activations')
+        # for fts in feature_activations:
+        #     print(fts.shape)
         
-        print('Printing attention activations')
-        for attn in attn_activations:
-            print(attn.shape)
+        # print('Printing attention activations')
+        # for attn in attn_activations:
+        #     print(attn.shape)
 
 
         fts_all = feature_activations[4:15]
@@ -210,7 +210,8 @@ class WeCLIP(nn.Module):
 
         attn_weight_last = attn_activations[-1]
 
-        attn_weight_list, attn_weight_last = attn_post_processing(self.encoder.image_encoder, attn_weight_list, attn_weight_last)
+        batch_size = img.shape[0]
+        attn_weight_list, attn_weight_last = attn_post_processing(self.encoder.image_encoder, batch_size,attn_weight_list, attn_weight_last)
 
 
         self.grad_cam = GradCAM(model=self.encoder,

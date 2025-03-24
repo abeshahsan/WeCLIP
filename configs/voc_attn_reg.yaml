@@ -29,6 +29,7 @@ train:
 
 val:
   split: train
+  samples_per_gpu: 1 #4 #2
 
 optimizer:
   type: AdamW
