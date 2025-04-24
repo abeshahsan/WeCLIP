@@ -101,13 +101,19 @@ def generate_trans_mat_seg(aff_mask, attn_weight, grayscale_cam):
     return trans_mat
 
 
-gradient_activation = None
-def gradient_hook():
-    pass
+gradcam_activations = None
+gradcam_gradients = None
 
+def gradcam_forward_hook(module, input, output):
+    global gradcam_activations
+    gradcam_activations = output
+
+def gradcam_backward_hook(module, grad_in, grad_out):
+    global gradcam_gradients
+    gradcam_gradients = grad_out[0]
 
 def perform_single_voc_cam(model, annotation_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,
-                       fg_text_features, cam, attn_weight_last, mode='train', require_seg_trans=False):
+                       fg_text_features, attn_weight_last, mode='train', require_seg_trans=False):
     bg_text_features = bg_text_features.cuda()
     fg_text_features = fg_text_features.cuda()
 
@@ -148,16 +154,16 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
         #                                                         targets=targets,
         #                                                         target_size=None)
         
-        logits = model.forward_last_layer(image_features, text_features_temp)
         target_layer = model.image_encoder.layers[-1].blocks[-1]
-        target_layer.register_forward_hook()
-            # block.attn.attn_drop.register_forward_hook(attn_forward_hook)
+        target_layer.register_forward_hook(gradcam_forward_hook)
+        target_layer.register_backward_hook(gradcam_backward_hook)
+        
 
+        logits = model.forward_last_layer(image_features, text_features_temp)
         model.zero_grad()
 
-        score = logits[label_index]
+        score = logits[0, label_index]
         score.backward(retain_graph=True)
-
 
         B, L, C = gradcam_activations.shape
 
@@ -172,15 +178,8 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
         gradcam_map = (gradcam_map - gradcam_map_min) / (gradcam_map_max - gradcam_map_min + 1e-8)
         
         gradcam_map_np = gradcam_map.cpu().detach().numpy()[0, 0].astype(np.float32)
-        heatmap = cv2.resize(gradcam_map_np, (image.width, image.height))
-        heatmap = np.uint8(255 * heatmap)
-        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-        
-        img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
 
-        grayscale_cam = grayscale_cam[0, :]
-
+        grayscale_cam = cv2.resize(gradcam_map_np, (14, 14))
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
         
@@ -227,6 +226,9 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
 
         cam_refined = torch.matmul(trans_mat, cam_to_refine).reshape(h // 16, w // 16)
         cam_refined_list.append(cam_refined)
+
+    target_layer._backward_hooks.clear()
+    target_layer._forward_hooks.clear()
 
     # if mode == 'train':
     return cam_refined_list, keys, w, h

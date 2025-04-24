@@ -214,10 +214,10 @@ class WeCLIP(nn.Module):
         attn_weight_list, attn_weight_last = attn_post_processing(self.encoder.image_encoder, batch_size,attn_weight_list, attn_weight_last)
 
 
-        self.grad_cam = GradCAM(model=self.encoder,
-                                target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
-                                # use_cuda=True,
-                                reshape_transform=reshape_transform)
+        # self.grad_cam = GradCAM(model=self.encoder,
+        #                         target_layers=[self.encoder.image_encoder.layers[-1].blocks[-1]],
+        #                         # use_cuda=True,
+        #                         reshape_transform=reshape_transform)
 
         fts_all_stack = torch.stack(fts_all, dim=0) # (11, hw, b, c)
         attn_weight_stack = torch.stack(attn_weight_list, dim=0).permute(1, 0, 2, 3)
@@ -266,7 +266,7 @@ class WeCLIP(nn.Module):
 
             cam_refined_list, keys, w, h = perform_single_voc_cam(self.encoder, img_path, img_i, cam_fts, cam_attn, seg_attn,
                                                                    self.bg_text_features, self.fg_text_features,
-                                                                   self.grad_cam,
+                                                                #    self.grad_cam,
                                                                    attn_weight_last_i,
                                                                    mode=mode,
                                                                    require_seg_trans=require_seg_trans)
