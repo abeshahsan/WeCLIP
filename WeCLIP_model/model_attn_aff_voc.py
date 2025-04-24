@@ -264,7 +264,7 @@ class WeCLIP(nn.Module):
             else:
                 require_seg_trans = False
 
-            cam_refined_list, keys, w, h = perform_single_voc_cam(img_path, img_i, cam_fts, cam_attn, seg_attn,
+            cam_refined_list, keys, w, h = perform_single_voc_cam(self.encoder, img_path, img_i, cam_fts, cam_attn, seg_attn,
                                                                    self.bg_text_features, self.fg_text_features,
                                                                    self.grad_cam,
                                                                    attn_weight_last_i,

@@ -101,10 +101,12 @@ def generate_trans_mat_seg(aff_mask, attn_weight, grayscale_cam):
     return trans_mat
 
 
+gradient_activation = None
+def gradient_hook():
+    pass
 
 
-
-def perform_single_voc_cam(annotation_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,
+def perform_single_voc_cam(model, annotation_path, image, image_features, attn_weight_list, seg_attn, bg_text_features,
                        fg_text_features, cam, attn_weight_last, mode='train', require_seg_trans=False):
     bg_text_features = bg_text_features.cuda()
     fg_text_features = fg_text_features.cuda()
@@ -137,13 +139,45 @@ def perform_single_voc_cam(annotation_path, image, image_features, attn_weight_l
     text_features_temp = torch.cat([fg_features_temp, bg_features_temp], dim=0)
     input_tensor = [image_features, text_features_temp.cuda(), h, w]
 
+
     for idx, label in enumerate(label_list):
         label_index = new_class_names.index(label)
         keys.append(label_index)
         targets = [ClipOutputTarget(label_list.index(label))]
-        grayscale_cam, logits_per_image = cam(input_tensor=input_tensor,
-                                                                targets=targets,
-                                                                target_size=None)  # (ori_width, ori_height))
+        # grayscale_cam, logits_per_image = cam(input_tensor=input_tensor,
+        #                                                         targets=targets,
+        #                                                         target_size=None)
+        
+        logits = model.forward_last_layer(image_features, text_features_temp)
+        target_layer = model.image_encoder.layers[-1].blocks[-1]
+        target_layer.register_forward_hook()
+            # block.attn.attn_drop.register_forward_hook(attn_forward_hook)
+
+        model.zero_grad()
+
+        score = logits[label_index]
+        score.backward(retain_graph=True)
+
+
+        B, L, C = gradcam_activations.shape
+
+        H = W = int(L ** 0.5)  # Assumes a square feature map
+        activations_reshaped = gradcam_activations.view(B, H, W, C).permute(0, 3, 1, 2)
+        gradients_reshaped = gradcam_gradients.view(B, H, W, C).permute(0, 3, 1, 2)
+        weights = gradients_reshaped.mean(dim=(2, 3), keepdim=True)
+        gradcam_map = torch.sum(weights * activations_reshaped, dim=1, keepdim=True)
+        gradcam_map = F.relu(gradcam_map)
+        gradcam_map_min = gradcam_map.min()
+        gradcam_map_max = gradcam_map.max()
+        gradcam_map = (gradcam_map - gradcam_map_min) / (gradcam_map_max - gradcam_map_min + 1e-8)
+        
+        gradcam_map_np = gradcam_map.cpu().detach().numpy()[0, 0].astype(np.float32)
+        heatmap = cv2.resize(gradcam_map_np, (image.width, image.height))
+        heatmap = np.uint8(255 * heatmap)
+        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+        
+        img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
 
         grayscale_cam = grayscale_cam[0, :]
 
