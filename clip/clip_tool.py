@@ -162,10 +162,6 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
         logits = model.forward_last_layer(image_features, text_features_temp)
         model.zero_grad()
 
-
-        with open("test.txt", "a") as f:
-            f.write(f"{label_id} ")
-
         score = logits[0, label_id]
         score.backward(retain_graph=True)
 
@@ -233,6 +229,9 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
 
     target_layer._backward_hooks.clear()
     target_layer._forward_hooks.clear()
+    global gradcam_activations, gradcam_gradients
+    gradcam_activations = None
+    gradcam_gradients = None
 
     # if mode == 'train':
     return cam_refined_list, keys, w, h
