@@ -64,7 +64,26 @@ def attn_post_processing(model, batch_size, attn_weight_list, attn_weight_last):
 
     return new_attn_weight_list, attn_weight_last
 
-selected_image_names = ['2007_000032', '2007_002105', '2007_002227', '2007_002234', '2007_002273']
+selected_image_names = [
+    '2007_000032',
+    '2007_002099',
+    '2007_002105',
+    '2007_002107',
+    '2007_002120',
+    '2007_002142',
+    '2007_002198',
+    '2007_002212',
+    '2007_002216',
+    '2007_002227',
+    '2007_002234',
+    '2007_002273',
+    '2007_002281',
+    '2007_002293',
+    '2007_002361',
+    '2007_002368',
+    '2007_002370',
+    '2007_002403',
+]
 
 def save_some_cams(cam, annotation_path, cam_idx):
     annotation_path = annotation_path.replace('\\', '/')

@@ -146,9 +146,9 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
     input_tensor = [image_features, text_features_temp.cuda(), h, w]
 
 
-    for idx, label in enumerate(label_list):
-        label_index = new_class_names.index(label)
-        keys.append(label_index)
+    for idx, label_id in enumerate(label_id_list):
+        label = new_class_names[label_id]
+        keys.append(label_id)
         targets = [ClipOutputTarget(label_list.index(label))]
         # grayscale_cam, logits_per_image = cam(input_tensor=input_tensor,
         #                                                         targets=targets,
@@ -162,7 +162,11 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
         logits = model.forward_last_layer(image_features, text_features_temp)
         model.zero_grad()
 
-        score = logits[0, label_index]
+
+        with open("test.txt", "a") as f:
+            f.write(f"{label_id} ")
+
+        score = logits[0, label_id]
         score.backward(retain_graph=True)
 
         B, L, C = gradcam_activations.shape
@@ -183,7 +187,7 @@ def perform_single_voc_cam(model, annotation_path, image, image_features, attn_w
         grayscale_cam_highres = cv2.resize(grayscale_cam, (w, h))
         highres_cam_to_save.append(torch.tensor(grayscale_cam_highres))
         
-        save_some_cams(grayscale_cam, annotation_path, idx)
+        save_some_cams(grayscale_cam, annotation_path, label_id)
 
         if idx == 0:
             if require_seg_trans == True:
