@@ -62,9 +62,9 @@ def generate_trans_mat(aff_mask, attn_weight, grayscale_cam):
 
 
 def compute_trans_mat(attn_weight):
-    # aff_mat = attn_weight
-    aff_mat = F.interpolate(attn_weight.unsqueeze(0).unsqueeze(0), size=(196, 196), mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
-
+    aff_mat = attn_weight
+    # aff_mat = F.interpolate(attn_weight.unsqueeze(0).unsqueeze(0), size=(196, 196), mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
+    
     trans_mat = aff_mat / torch.sum(aff_mat, dim=0, keepdim=True)
     trans_mat = trans_mat / torch.sum(trans_mat, dim=1, keepdim=True)
 
@@ -153,8 +153,11 @@ def perform_single_voc_cam(annotation_path, image, image_features, attn_weight_l
         save_some_cams(grayscale_cam, annotation_path, idx)
 
         if idx == 0:
+            attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
+            attn_weight = F.interpolate(attn_weight.unsqueeze(0), size=(196, 196), mode='bilinear', align_corners=False).squeeze(0)
+
+
             if require_seg_trans == True:
-                attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
                 attn_weight = attn_weight[:, :, :][-6:] #-8
 
                 # attn_diff = torch.abs(seg_attn - attn_weight)
@@ -172,7 +175,7 @@ def perform_single_voc_cam(annotation_path, image, image_features, attn_weight_l
                 attn_weight = attn_weight.detach()
                 attn_weight = attn_weight * seg_attn.squeeze(0).detach()
             else:
-                attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
+                # attn_weight = torch.cat([attn_weight_list, attn_weight_last], dim=0)
                 attn_weight = attn_weight[:, :, :][-8:]
                 attn_weight = torch.mean(attn_weight, dim=0)  # (1, hw, hw)
                 attn_weight = attn_weight.detach()
