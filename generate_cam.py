@@ -121,8 +121,7 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
         heatmap = np.uint8(255 * heatmap)
         heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
         
-        img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        overlay = cv2.addWeighted(cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR), 0.5, heatmap, 0.5, 0)
+        overlay = cv2.addWeighted(np.array(image), 0.5, heatmap, 0.5, 0)
         
         if args.output is None:
             output_dir = 'output'
