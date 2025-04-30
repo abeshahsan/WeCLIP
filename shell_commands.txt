@@ -24,7 +24,7 @@ python -W ignore generate_cam.py `
 --cfg 'configs/unicl_swin_base.yaml' `
 --dataset 'voc' `
 --data-path 'C:/Users/abesh/Downloads/archive/VOC2012' `
---unicl_model 'checkpoint/yfcc14m_swin_base.pth' `
+--unicl_model 'checkpoint/in21k_yfcc14m_swin_base.pth' `
 --name-list 'name_list.txt' `
 --output 'output/unicl' `
 --batch-size 1 `

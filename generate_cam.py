@@ -13,19 +13,16 @@ from model.text_encoder.build import build_tokenizer
 import cv2
 import numpy as np
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from utils import MY_CLASSES, get_text_embeddings
+from utils import MY_CLASSES, BACKGROUND_CATEGORY, get_text_embeddings
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--batch-size', type=int, default=4, help="batch size for single GPU")
-
-
-
-
 parser.add_argument('--output', default='output', type=str, metavar='PATH', help='root of output folder')
 parser.add_argument('--cfg', type=str, default='configs/unicl_swin_tiny.yaml', help='config file path')
 parser.add_argument('--unicl_model', type=str, default='checkpoint/yfcc14m.pth', help='unicl model path')
 parser.add_argument('--data-path', type=str, help='path to dataset')
+parser.add_argument('--dataset', type=str, default='voc', help='dataset name')
 parser.add_argument('--name-list', type=str, default=None, help='path to name list file')
 
 # torch.manual_seed(0)
@@ -97,15 +94,15 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
     logits_per_image = logit_scale * image_features @ text_embeddings.t()
     # logits_per_image = logit_scale * image_features_norm @ text_embeddings_norm.t()
 
-    # logits_per_image = logits_per_image.softmax(dim=-1)
+    logits_per_image = logits_per_image.softmax(dim=-1)
 
-    label_list = [torch.argmax(logits_per_image, dim=-1).item()]
+    # label_list = [torch.argmax(logits_per_image, dim=-1).item()]
 
-    for label in label_list:
+    for idx, label in enumerate(label_list):
         score = logits_per_image[0, label]
         # print(f'Predicted class: {MY_CLASSES[pred]} with score {score.item()}')
         model.zero_grad()
-        score.backward(retain_graph=True)
+        score.backward(retain_graph= idx < len(label_list) - 1)
 
         B, L, C = gradcam_activations.shape
 
@@ -137,20 +134,22 @@ def process_image(model, image_path, label_path,  text_embeddings, logit_scale, 
         image_name = os.path.basename(image_path).split('.')[0]
         
         cv2.imwrite(os.path.join(output_dir, f'{image_name}_{label}.png'), overlay)
-        print(f'GradCAM for image {image_path} saved to {output_dir}/{image_name}_{label}.png')
+        # print(f'GradCAM for image {image_path} saved to {output_dir}/{image_name}_{label}.png')
 
         torch.cuda.empty_cache()
 
-    for block_idx, feature_activation in enumerate(feature_activations):
-        print(f'Block {block_idx} feature activation shape: {feature_activation.shape}')
-    for block_idx, attn_activation in enumerate(attn_activations):
-        print(f'Block {block_idx} attention activation shape: {attn_activation.shape}')
+    # for block_idx, feature_activation in enumerate(feature_activations):
+    #     print(f'Block {block_idx} feature activation shape: {feature_activation.shape}')
+    # for block_idx, attn_activation in enumerate(attn_activations):
+    #     print(f'Block {block_idx} attention activation shape: {attn_activation.shape}')
     
     forward_handle.remove()
     backward_handle.remove()
     for layer in model.image_encoder.layers:
         for block in layer.blocks:
             block._forward_hooks.clear()
+
+    torch.cuda.empty_cache()
 
 def feature_forward_hook(module, input, output):
     feature_activations.append(output)
@@ -185,6 +184,8 @@ def test_unicl_classification(cfg, args):
     # Precompute text embeddings (these are not used for GradCAM, so no gradient needed)
     with torch.no_grad():
         text_embeddings = get_text_embeddings(tokenizer, model, norm=False)
+
+    print(text_embeddings.shape)
 
     logit_scale = model.logit_scale.exp()
     

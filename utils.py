@@ -130,6 +130,9 @@ MY_CLASSES = [
     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor screen',
 ]
 
+BACKGROUND_CATEGORY = ['ground','land','grass','tree','building','wall','sky','lake','water','river','sea', 'railway','railroad','keyboard','helmet', 'cloud','house','mountain','ocean','road','rock','street', 'valley','bridge','sign',
+]
+
 TEMPLATES = [
     'a clean origami {}.',
     # '{}.',
@@ -230,7 +233,7 @@ def tokenize_text(classname, tokenizer, device = 'cuda'):
 def get_text_embeddings(tokenizer, model: UniCLModel, device = 'cuda', norm = True):
     with torch.no_grad():
         zeroshot_weights = []
-        for classname in MY_CLASSES:
+        for classname in MY_CLASSES + BACKGROUND_CATEGORY:
             texts = tokenize_text(classname, tokenizer, device)
             class_embeddings = model.encode_text(texts) #embed with text encoder
             class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
