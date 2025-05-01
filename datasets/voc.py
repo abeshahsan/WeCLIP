@@ -68,7 +68,6 @@ class VOC12Dataset(Dataset):
 
 def _transform_resize():
     return Compose([
-        Resize((224, 224), interpolation=Image.BICUBIC),
         ToTensor(),
         Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711)),
     ])
@@ -209,7 +208,7 @@ class VOC12SegDataset(VOC12Dataset):
         self.label_list = load_cls_label_list(name_list_dir=name_list_dir)
         self.scale = 1
         self.patch_size = 16
-        
+        self.fixed_resize = (224, 224)  # 🔧 Fixed size for validation
 
     def __len__(self):
         return len(self.name_list)
@@ -217,54 +216,42 @@ class VOC12SegDataset(VOC12Dataset):
     def __transforms(self, image, label):
         if self.aug:
             image = np.array(image)
-            '''
-            if self.resize_range: 
-                image, label = transforms.random_resize(
-                    image, label, size_range=self.resize_range)
-            
-            if self.rescale_range:
-                image, label = transforms.random_scaling(
-                    image,
-                    label,
-                    scale_range=self.rescale_range)
-            '''
+
             if self.img_fliplr:
                 image, label = transforms.random_fliplr(image, label)
+
             image = self.color_jittor(image)
+
             if self.crop_size:
                 image, label, img_box = transforms.random_crop(
                     image,
                     label,
                     crop_size=self.crop_size,
-                    # mean_rgb=[123.675, 116.28, 103.53], 
                     ignore_index=self.ignore_index)
-        '''
-        if self.stage != "train":
-            image = transforms.img_resize_short(image, min_size=min(self.resize_range))
-        '''
-        # image = self.normalize(image)
-        # image = image.numpy()
-        
+
+        else:
+            # 🔧 Resize both image and label to fixed size (224x224)
+            image = Image.fromarray(image).convert("RGB")
+            label = Image.fromarray(label)
+
+            image = Resize(self.fixed_resize, interpolation=BICUBIC)(image)
+            label = Resize(self.fixed_resize, interpolation=Image.NEAREST)(label)
+
+            image = np.asarray(image)
+            label = np.asarray(label)
+
+        # Normalize and convert to tensor
         image = transforms.normalize_img(image)
-        ## to chw
-        image = np.transpose(image, (2, 0, 1))
+        image = np.transpose(image, (2, 0, 1))  # HWC → CHW
 
         return image, label
 
     def __getitem__(self, idx):
         img_name, image, label = super().__getitem__(idx)
-#         ori_height = image.size[1]
-#         ori_width = image.size[0]
-        
-#         new_height = int(np.ceil(self.scale * int(ori_height) / self.patch_size) * self.patch_size)
-#         new_width = int(np.ceil(self.scale * int(ori_width) / self.patch_size) * self.patch_size)
-        
-#         image = Resize((new_height, new_width), interpolation=BICUBIC)(image)
-#         image = image.convert("RGB")
 
         image, label = self.__transforms(image=image, label=label)
 
-        if self.stage=='test':
+        if self.stage == 'test':
             cls_label = 0
         else:
             cls_label = self.label_list[img_name]
