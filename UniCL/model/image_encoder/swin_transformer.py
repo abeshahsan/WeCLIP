@@ -271,15 +271,48 @@ class SwinTransformerBlock(nn.Module):
         x = self.mlp(x)
         x = x + self.drop_path(x)
 
-        attn_weight = attn_weight.mean(dim = 1)# for heads
-        grid_size = int((attn_weight.shape[0]//B) ** 0.5)
-        attn_weight = attn_weight.view(B, grid_size, grid_size, self.window_size**2, self.window_size**2)
+        # attn_weight = attn_weight.mean(dim = 1)# for heads
+        # grid_size = int((attn_weight.shape[0]//B) ** 0.5)
+        # attn_weight = attn_weight.view(B, grid_size, grid_size, self.window_size**2, self.window_size**2)
 
-        attn_weight = attn_weight.permute(0, 1, 3, 2, 4).contiguous()  
-        attn_weight = attn_weight.view(B, grid_size * (self.window_size ** 2), grid_size * (self.window_size ** 2))
+        # attn_weight = attn_weight.permute(0, 1, 3, 2, 4).contiguous()  
+        # attn_weight = attn_weight.view(B, grid_size * (self.window_size ** 2), grid_size * (self.window_size ** 2))
 
 
-        return x, attn_weight
+        # return x, attn_weight
+
+        # ----------------------------
+        # Extract and reshape attention
+        # ----------------------------
+        attn_weight = attn_weight.mean(dim=1)  # average heads: [nW*B, ws², ws²]
+        nW = (H // self.window_size) * (W // self.window_size)
+        attn_weight = attn_weight.view(B, nW, self.window_size ** 2, self.window_size ** 2)  # [B, nW, ws², ws²]
+
+        # ----------------------------
+        # Build global attention map
+        # ----------------------------
+        # Build a grid of indices: [1, H, W, 1]
+        idx_map = torch.arange(H * W, device=x.device).reshape(1, H, W, 1)
+        window_idx = window_partition(idx_map, self.window_size)  # [B*nW, ws, ws, 1]
+        window_idx = window_idx.view(B, nW, self.window_size ** 2)  # [B, nW, ws²]
+
+        N = H * W
+        attn_weight_full = torch.zeros(B, N, N, device=x.device)
+
+        for b in range(B):
+            for w in range(nW):
+                idx = window_idx[b, w]  # [ws²]
+                a = attn_weight[b, w]   # [ws², ws²]
+                attn_weight_full[b].index_put_(
+                    (idx.unsqueeze(1), idx.unsqueeze(0)), a, accumulate=True
+                )
+
+        # Normalize rows to sum to 1
+        attn_weight_full = attn_weight_full / attn_weight_full.sum(dim=-1, keepdim=True).clamp(min=1e-6)
+
+        return x, attn_weight_full
+    
+
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
