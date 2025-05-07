@@ -260,74 +260,93 @@ def train(cfg):
 
     avg_meter = AverageMeter()
 
-    loop = tqdm(range(start_iter, cfg.train.max_iters), ncols=100, ascii=" >=")
+    max_iters = cfg.train.max_iters
+    chunk_size = cfg.train.log_iters
 
-    for n_iter in loop:
-        WeCLIP_model.train()
-        try:
-            img_name, inputs, cls_labels, img_box = next(train_loader_iter)
-        except:
-            train_loader_iter = iter(train_loader)
-            img_name, inputs, cls_labels, img_box = next(train_loader_iter)
-
-        segs, cam, attn_pred = WeCLIP_model(inputs.to(DEVICE), img_name)
-
-        pseudo_label = cam
-
-        segs = F.interpolate(segs, size=pseudo_label.shape[1:], mode='bilinear', align_corners=False)
-
-        fts_cam = cam.clone()
-
-            
-        aff_label = cams_to_affinity_label(fts_cam, mask=attn_mask, ignore_index=cfg.dataset.ignore_index)
-        attn_loss, pos_count, neg_count = get_aff_loss(attn_pred, aff_label)
-
-        seg_loss = get_seg_loss(segs, pseudo_label.type(torch.long), ignore_index=cfg.dataset.ignore_index)
-
-        loss = 1 * seg_loss + 0.1*attn_loss
-
-
-        avg_meter.add({'seg_loss': seg_loss.item(), 'attn_loss': attn_loss.item()})
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    for chunk_start in range(start_iter, max_iters, chunk_size):
         
-        if (n_iter + 1) % cfg.train.log_iters == 0:
-            
-            delta, eta = cal_eta(time0, n_iter+1, cfg.train.max_iters)
-            cur_lr = optimizer.param_groups[0]['lr']
-
-            preds = torch.argmax(segs,dim=1).cpu().numpy().astype(np.int16)
-            gts = pseudo_label.cpu().numpy().astype(np.int16)
-
-            seg_mAcc = (preds==gts).sum()/preds.size
-
-            
-            ckpt_name = os.path.join("/content/drive/MyDrive/WEclip-ckpt", "WeCLIP_model_iter_%d.pth"%(n_iter+1))
-            checkpoint = {
-                'model_state_dict': WeCLIP_model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'iter': n_iter+1
-            }
-            torch.save(checkpoint, ckpt_name)
-
-            logging.info("Iter: %d; Elasped: %s; ETA: %s; LR: %.3e;, pseudo_seg_loss: %.4f, attn_loss: %.4f, pseudo_seg_mAcc: %.4f"%(n_iter+1, delta, eta, cur_lr, avg_meter.pop('seg_loss'), avg_meter.pop('attn_loss'), seg_mAcc))
-
-            writer.add_scalars('train/loss',  {"seg_loss": seg_loss.item(), "attn_loss": attn_loss.item()}, global_step=n_iter)
-
+        chunk_end = min(chunk_start + chunk_size, max_iters)
         
-        if (n_iter + 1) % cfg.train.eval_iters == 0:
-            ckpt_name = os.path.join(cfg.work_dir.ckpt_dir, "WeCLIP_model_iter_%d.pth"%(n_iter+1))
-            logging.info('Validating...')
-            if (n_iter + 1) > 26000:
-                torch.save(WeCLIP_model.state_dict(), ckpt_name)
-            seg_score, cam_score = validate(model=WeCLIP_model, data_loader=val_loader, cfg=cfg)
-            logging.info("cams score:")
-            logging.info(cam_score)
-            logging.info("segs score:")
-            logging.info(seg_score)
+        with tqdm(range(chunk_start, chunk_end), 
+                        desc=f"Training Iter {chunk_start+1} to {chunk_end}") as pbar:
+            for n_iter in pbar:
+            
+                # Get the next batch; if the iterator is exhausted, reinitialize it.
+                try:
+                    img_name, inputs, cls_labels, img_box = next(train_loader_iter)
+                except StopIteration:
+                    train_loader_iter = iter(train_loader)
+                    img_name, inputs, cls_labels, img_box = next(train_loader_iter)
+                
+                # Forward pass through the model.
+                segs, cam, attn_pred = WeCLIP_model(inputs.to(DEVICE), img_name)
+                pseudo_label = cam
+                segs = F.interpolate(segs, size=pseudo_label.shape[1:], mode='bilinear', align_corners=False)
+                fts_cam = cam.clone()
+                
+                # Compute the affinity label and losses.
+                aff_label = cams_to_affinity_label(fts_cam, mask=attn_mask, ignore_index=cfg.dataset.ignore_index)
+                attn_loss, pos_count, neg_count = get_aff_loss(attn_pred, aff_label)
+                seg_loss = get_seg_loss(segs, pseudo_label.type(torch.long), ignore_index=cfg.dataset.ignore_index)
+                loss = 1 * seg_loss + 0.1 * attn_loss
 
+                pbar.set_postfix(seg_loss=seg_loss.item(), attn_loss=attn_loss.item(), loss=loss.item())
+                
+                # Update average meter.
+                avg_meter.add({'seg_loss': seg_loss.item(), 'attn_loss': attn_loss.item()})
+                
+                # Backward and update.
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                torch.cuda.empty_cache()
+                
+                # Logging and checkpointing.
+
+                if (n_iter + 1) % cfg.train.log_iters == 0:
+                    delta, eta = cal_eta(time0, n_iter + 1, max_iters)
+                    cur_lr = optimizer.param_groups[0]['lr']
+                    preds = torch.argmax(segs, dim=1).cpu().numpy().astype(np.int16)
+                    gts = pseudo_label.cpu().numpy().astype(np.int16)
+                    seg_mAcc = (preds == gts).sum() / preds.size
+                    
+                    ckpt_name = os.path.join(cfg.work_dir.ckpt_dir, f"WeCLIP_with_unicl_iter_{n_iter+1}.pth")
+                    checkpoint = {
+                        'model_state_dict': WeCLIP_model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                        'iter': n_iter + 1
+                    }
+                    torch.save(checkpoint, ckpt_name)
+
+                    # After saving, delete all previous checkpoint files except the newly saved one.
+                    for file in os.listdir(cfg.work_dir.ckpt_dir):
+                        if file.endswith('.pth') and 'WeCLIP_with_unicl_iter_' in file and file != os.path.basename(ckpt_name):
+                            os.remove(os.path.join(cfg.work_dir.ckpt_dir, file))
+                    
+                    print()
+
+                    logging.info(
+                        f"Iter: {n_iter+1}; Elasped: {delta}; ETA: {eta}; LR: {cur_lr:.3e}; "
+                        f"pseudo_seg_loss: {avg_meter.pop('seg_loss'):.4f}, attn_loss: {avg_meter.pop('attn_loss'):.4f}, "
+                        f"pseudo_seg_mAcc: {seg_mAcc:.4f}"
+                    )
+                    
+                    writer.add_scalars('train/loss', {"seg_loss": seg_loss.item(), "attn_loss": attn_loss.item()}, global_step=n_iter)
+                
+                # Evaluation.
+                if (n_iter + 1) % cfg.train.eval_iters == 0:
+                    ckpt_name = os.path.join(cfg.work_dir.ckpt_dir, f"WeCLIP_model_iter_{n_iter+1}.pth")
+                    logging.info('Validating...')
+                    if (n_iter + 1) > 26000:
+                        torch.save(WeCLIP_model.state_dict(), ckpt_name)
+                    seg_score, cam_score = validate(model=WeCLIP_model, data_loader=val_loader, cfg=cfg)
+                    logging.info("cams score:")
+                    logging.info(cam_score)
+                    logging.info("segs score:")
+                    logging.info(seg_score)
+
+    # Return or complete training.
     return True
 
 
