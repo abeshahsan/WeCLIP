@@ -293,6 +293,7 @@ class SwinTransformerBlock(nn.Module):
         # ----------------------------
         # Build a grid of indices: [1, H, W, 1]
         idx_map = torch.arange(H * W, device=x.device).reshape(1, H, W, 1)
+        idx_map = idx_map.expand(B, -1, -1, -1)  # [B, H, W, 1] — shared across batch
         window_idx = window_partition(idx_map, self.window_size)  # [B*nW, ws, ws, 1]
         window_idx = window_idx.view(B, nW, self.window_size ** 2)  # [B, nW, ws²]
 
