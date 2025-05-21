@@ -6,14 +6,14 @@ import argparse
 from PIL import Image
 import torchvision
 import matplotlib.pyplot as plt
-from config import get_config
+from UniCL.config import get_config
 from datasets import voc
-from model.model import build_unicl_model
-from model.text_encoder.build import build_tokenizer
+from UniCL.model.model import build_unicl_model
+from UniCL.model.text_encoder.build import build_tokenizer
 import cv2
 import numpy as np
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from utils import MY_CLASSES, BACKGROUND_CATEGORY, get_text_embeddings
+from UniCL.utils import MY_CLASSES, BACKGROUND_CATEGORY, get_text_embeddings
 
 parser = argparse.ArgumentParser()
 
