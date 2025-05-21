@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--batch-size', type=int, default=4, help="batch size for single GPU")
 parser.add_argument('--output', default='output', type=str, metavar='PATH', help='root of output folder')
-parser.add_argument('--cfg', type=str, default='configs/unicl_swin_tiny.yaml', help='config file path')
+parser.add_argument('--unicl_config', type=str, default='configs/unicl_swin_tiny.yaml', help='config file path')
 parser.add_argument('--unicl_model', type=str, default='checkpoint/yfcc14m.pth', help='unicl model path')
 parser.add_argument('--data-path', type=str, help='path to dataset')
 parser.add_argument('--dataset', type=str, default='voc', help='dataset name')
