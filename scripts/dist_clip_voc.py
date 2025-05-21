@@ -30,11 +30,13 @@ parser.add_argument("--config",
                     type=str,
                     help="config")
 parser.add_argument("--seg_detach", action="store_true", help="detach seg")
-parser.add_argument("--work_dir", default=None, type=str, help="work_dir")
+parser.add_argument("--work-dir", default=None, type=str, help="work_dir")
 parser.add_argument("--radius", default=8, type=int, help="radius")
 parser.add_argument("--crop_size", default=224, type=int, help="crop_size")
-parser.add_argument("--unicl_pretrain_path", default=None, type=str, help="unicl_pretrain_path")
+parser.add_argument("--unicl-pretrain-path", default=None, type=str, help="unicl_pretrain_path")
 parser.add_argument("--backbone-verbose", action="store_true", help="backbone-verbose")
+parser.add_argument("--root-dir", default=None, type=str, help="root_dir")
+parser.add_argument("--name-list-dir", default=None, type=str, help="name_list_dir")
 parser.add_argument("--unicl-config",
                     default='/your/path/WeCLIP/UniCL/configs/unicl_swin_base.yaml',
                     type=str,
