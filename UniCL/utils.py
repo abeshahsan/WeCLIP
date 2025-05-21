@@ -13,7 +13,7 @@ from timm.models.layers import trunc_normal_
 
 import logging
 
-from model.model import UniCLModel
+from UniCL.model.model import UniCLModel
 
 try:
     # noinspection PyUnresolvedReferences
