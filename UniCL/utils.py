@@ -9,6 +9,11 @@
 import os
 import torch
 import torch.distributed as dist
+from timm.models.layers import trunc_normal_
+
+import logging
+
+from model.model import UniCLModel
 
 try:
     # noinspection PyUnresolvedReferences
@@ -17,19 +22,35 @@ except ImportError:
     amp = None
 
 
-def load_checkpoint(config, model):
+def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
+    logger.info(f"==============> Resuming form {config.MODEL.RESUME}....................")
     if config.MODEL.RESUME.startswith('https'):
         checkpoint = torch.hub.load_state_dict_from_url(
             config.MODEL.RESUME, map_location='cpu', check_hash=True)
     elif os.path.exists(config.MODEL.RESUME):
         checkpoint = torch.load(config.MODEL.RESUME, map_location='cpu')
     else:
+        logger.info(f"==============> Cannot find {config.MODEL.RESUME}....................")
         return None
     
-    model.load_state_dict(checkpoint['model'], strict=False)
-    
+    msg = model.load_state_dict(checkpoint['model'], strict=False)
+    logger.info(msg)
+    max_accuracy = 0.0
+    if not config.EVAL_MODE and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+        config.defrost()
+        config.TRAIN.START_EPOCH = checkpoint['epoch'] + 1
+        config.freeze()
+        if 'amp' in checkpoint and config.AMP_OPT_LEVEL != "O0" and checkpoint['config'].AMP_OPT_LEVEL != "O0":
+            amp.load_state_dict(checkpoint['amp'])
+        logger.info(f"=> loaded successfully '{config.MODEL.RESUME}' (epoch {checkpoint['epoch']})")
+        if 'max_accuracy' in checkpoint:
+            max_accuracy = checkpoint['max_accuracy']
+
     del checkpoint
     torch.cuda.empty_cache()
+    return max_accuracy
 
 
 def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler, logger):
@@ -79,3 +100,158 @@ def reduce_tensor(tensor):
     dist.all_reduce(rt, op=dist.ReduceOp.SUM)
     rt /= dist.get_world_size()
     return rt
+class_map = {
+    0: 'aeroplane',
+    1: 'bicycle',
+    2: 'bird avian',
+    3: 'boat',
+    4: 'bottle',
+    5: 'bus',
+    6: 'car',
+    7: 'cat',
+    8: 'chair seat',
+    9: 'cow',
+    10: 'diningtable',
+    11: 'dog',
+    12: 'horse',
+    13: 'motorbike',
+    14: 'person with clothes,people,human',
+    15: 'pottedplant',
+    16: 'sheep',
+    17: 'sofa',
+    18: 'train',
+    19: 'tvmonitor screen'
+}
+
+MY_CLASSES = [
+    'aeroplane', 'bicycle', 'bird avian', 'boat', 'bottle',
+    'bus', 'car', 'cat', 'chair seat', 'cow',
+    'diningtable', 'dog', 'horse', 'motorbike', 'person with clothes,people,human',
+    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor screen',
+]
+
+BACKGROUND_CATEGORY = ['ground','land','grass','tree','building','wall','sky','lake','water','river','sea', 'railway','railroad','keyboard','helmet', 'cloud','house','mountain','ocean','road','rock','street', 'valley','bridge','sign',
+]
+
+TEMPLATES = [
+    'a clean origami {}.',
+    # '{}.',
+    # 'a photo of a {}.',
+    # 'a bad photo of a {}.',
+    # 'a photo of many {}.',
+    # 'a sculpture of a {}.',
+    # 'a photo of the hard to see {}.',
+    # 'a low resolution photo of the {}.',
+    # 'a rendering of a {}.',
+    # 'graffiti of a {}.',
+    # 'a bad photo of the {}.',
+    # 'a cropped photo of the {}.',
+    # 'a tattoo of a {}.',
+    # 'the embroidered {}.',
+    # 'a photo of a hard to see {}.',
+    # 'a bright photo of a {}.',
+    # 'a photo of a clean {}.',
+    # 'a photo of a dirty {}.',
+    # 'a dark photo of the {}.',
+    # 'a drawing of a {}.',
+    # 'a photo of my {}.',
+    # 'the plastic {}.',
+    # 'a photo of the cool {}.',
+    # 'a close-up photo of a {}.',
+    # 'a black and white photo of the {}.',
+    # 'a painting of the {}.',
+    # 'a painting of a {}.',
+    # 'a pixelated photo of the {}.',
+    # 'a sculpture of the {}.',
+    # 'a bright photo of the {}.',
+    # 'a cropped photo of a {}.',
+    # 'a plastic {}.',
+    # 'a photo of the dirty {}.',
+    # 'a jpeg corrupted photo of a {}.',
+    # 'a blurry photo of the {}.',
+    # 'a photo of the {}.',
+    # 'a good photo of the {}.',
+    # 'a rendering of the {}.',
+    # 'a {} in a video game.',
+    # 'a photo of one {}.',
+    # 'a doodle of a {}.',
+    # 'a close-up photo of the {}.',
+    # 'a photo of a {}.',
+    # 'the origami {}.',
+    # 'the {} in a video game.',
+    # 'a sketch of a {}.',
+    # 'a doodle of the {}.',
+    # 'a origami {}.',
+    # 'a low resolution photo of a {}.',
+    # 'the toy {}.',
+    # 'a rendition of the {}.',
+    # 'a photo of the clean {}.',
+    # 'a photo of a large {}.',
+    # 'a rendition of a {}.',
+    # 'a photo of a nice {}.',
+    # 'a photo of a weird {}.',
+    # 'a blurry photo of a {}.',
+    # 'a cartoon {}.',
+    # 'art of a {}.',
+    # 'a sketch of the {}.',
+    # 'a embroidered {}.',
+    # 'a pixelated photo of a {}.',
+    # 'itap of the {}.',
+    # 'a jpeg corrupted photo of the {}.',
+    # 'a good photo of a {}.',
+    # 'a plushie {}.',
+    # 'a photo of the nice {}.',
+    # 'a photo of the small {}.',
+    # 'a photo of the weird {}.',
+    # 'the cartoon {}.',
+    # 'art of the {}.',
+    # 'a drawing of the {}.',
+    # 'a photo of the large {}.',
+    # 'a black and white photo of a {}.',
+    # 'the plushie {}.',
+    # 'a dark photo of a {}.',
+    # 'itap of a {}.',
+    # 'graffiti of the {}.',
+    # 'a toy {}.',
+    # 'itap of my {}.',
+    # 'a photo of a cool {}.',
+    # 'a photo of a small {}.',
+    # 'a tattoo of the {}.',
+]
+
+def tokenize_text(classname, tokenizer, device = 'cuda'):
+    tokens = tokenizer(
+            [template.format(classname) for template in TEMPLATES],
+            max_length=77,         # Set the maximum length to match the model's expectation
+            padding="max_length",  # Pad the sequence to the maximum length
+            truncation=True,       # Truncate if longer than max_length
+            return_tensors="pt"    # Return PyTorch tensors
+        ).to(device)
+    return tokens
+
+
+def get_text_embeddings(tokenizer, model: UniCLModel, device = 'cuda', norm = True):
+    with torch.no_grad():
+        zeroshot_weights = []
+        for classname in MY_CLASSES + BACKGROUND_CATEGORY:
+            texts = tokenize_text(classname, tokenizer, device)
+            class_embeddings = model.encode_text(texts) #embed with text encoder
+            class_embeddings /= class_embeddings.norm(dim=-1, keepdim=True)
+            class_embedding = class_embeddings.mean(dim=0)
+            class_embedding /= class_embedding.norm()
+            zeroshot_weights.append(class_embedding)
+        zeroshot_weights = torch.stack(zeroshot_weights, dim=1).to(device)
+    return zeroshot_weights.t()
+
+def setup_logger(filename='test.log'):
+    logFormatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s: %(message)s')
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    fHandler = logging.FileHandler(filename, mode='w')
+    fHandler.setFormatter(logFormatter)
+    logger.addHandler(fHandler)
+    cHandler = logging.StreamHandler()
+    cHandler.setFormatter(logFormatter)
+    logger.addHandler(cHandler)
+    
+setup_logger()
