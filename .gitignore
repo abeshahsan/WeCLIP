@@ -5,9 +5,20 @@
 **/pretrained/
 
 **/*.log
+**/*.pth
 
 **/tb_logger/
 **/initial_cams/
 
 **/work_dir/
 
+LOL/predictions/
+LOL.zip
+val/
+Viz/
+viz_cams/
+predictions/
+predictions.zip
+clip.zip
+val.zip
+color_predictions/

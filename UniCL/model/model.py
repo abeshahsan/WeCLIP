@@ -139,7 +139,7 @@ class UniCLModel(nn.Module):
         if norm:
             x = x / x.norm(dim=-1, keepdim=True)
 
-        return 
+        return x
     
     def forward_last_layer(self, image_features, text_features):
         x = self.image_encoder.layers[-1].blocks[-1](image_features)

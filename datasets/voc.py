@@ -1,12 +1,8 @@
 import numpy as np
-from numpy.lib.utils import deprecate
-import torch
-import torch.nn.functional as F
 from torch.utils.data import Dataset
 import os
 import imageio.v2 as imageio
 from . import transforms
-import torchvision
 from torchvision.transforms import Compose, Resize, ToTensor, Normalize
 from PIL import Image
 try:

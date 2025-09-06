@@ -75,20 +75,18 @@ class BaseCAM:
         W,H = self.get_target_width_height(input_tensor)
         outputs = self.activations_and_grads(input_tensor,H,W)
         if targets is None:
-            # if isinstance(input_tensor, list):
-            #     target_categories = np.argmax(outputs[0].cpu().data.numpy(), axis=-1)
-            # else:
-            target_categories = np.argmax(outputs.cpu().data.numpy(), axis=-1)
-            
+            if isinstance(input_tensor, list):
+                target_categories = np.argmax(outputs[0].cpu().data.numpy(), axis=-1)
+            else:
+                target_categories = np.argmax(outputs.cpu().data.numpy(), axis=-1)
             targets = [ClassifierOutputTarget(category) for category in target_categories]
 
         if self.uses_gradients:
             self.model.zero_grad()
-            # if isinstance(input_tensor, list):
-            #     loss = sum([target(output[0]) for target, output in zip(targets, outputs)])
-            # else:
-            loss = sum([target(output) for target, output in zip(targets, outputs)])
-
+            if isinstance(input_tensor, list):
+                loss = sum([target(output[0]) for target, output in zip(targets, outputs)])
+            else:
+                loss = sum([target(output) for target, output in zip(targets, outputs)])
             loss.backward(retain_graph=True)
 
         # In most of the saliency attribution papers, the saliency is
@@ -104,10 +102,10 @@ class BaseCAM:
                                                    targets,
                                                    target_size,
                                                    eigen_smooth)
-        # if isinstance(input_tensor, list):
-        #     return self.aggregate_multi_layers(cam_per_layer), outputs[0], outputs[1]
-        # else:
-        return self.aggregate_multi_layers(cam_per_layer), outputs
+        if isinstance(input_tensor, list):
+            return self.aggregate_multi_layers(cam_per_layer), outputs[0], outputs[1]
+        else:
+            return self.aggregate_multi_layers(cam_per_layer), outputs
 
     def get_target_width_height(self,
                                 input_tensor: torch.Tensor) -> Tuple[int, int]:
